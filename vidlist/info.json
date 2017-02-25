@@ -1,0 +1,9 @@
+{
+    "AUTHOR" : "Annihilator6000",
+    "SHORT" : "Video list tools",
+    "DESCRIPTION" : "Create groups of easy to access video lists",
+    "DISABLED" : false,
+    "NAME" : "vidlist",
+    "TAGS" : ["vidlist", "video", "list"],
+    "INSTALL_MSG" : "Video lists are now available to you with easy to use commands. https://github.com/Annihilator6000/A6k-Cogs"
+}
