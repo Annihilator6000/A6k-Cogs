@@ -1,0 +1,9 @@
+{
+    "AUTHOR" : "Annihilator6000",
+    "SHORT" : "Hex/ASCII conversion tools",
+    "DESCRIPTION" : "Allows the user to convert Hex strings to ASCII, and ASCII strings to Hex.",
+    "DISABLED" : false,
+    "NAME" : "hexconvert",
+    "TAGS" : ["hexconvert", "hex", "hexadecimal", "ascii", "text"],
+    "INSTALL_MSG" : "Hex/ASCII conversion tools are now available to you with easy to use commands. https://github.com/Annihilator6000/A6k-Cogs"
+}
