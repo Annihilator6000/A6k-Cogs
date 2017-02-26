@@ -8,6 +8,7 @@ from cogs.utils.chat_formatting import *
 from __main__ import send_cmd_help
 
 class Convert(object):
+    # Conversion code from http://stackoverflow.com/questions/7396849/convert-binary-to-ascii-and-vice-versa#7397689
     def text_to_bits(self, text, encoding='utf-8', errors='surrogatepass'):
         bits = bin(int(binascii.hexlify(text.encode(encoding, errors)), 16))[2:]
         return bits.zfill(8 * ((len(bits) + 7) // 8))
