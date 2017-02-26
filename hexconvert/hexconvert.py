@@ -14,7 +14,6 @@ class Convert(object):
         return bits.zfill(8 * ((len(bits) + 7) // 8))
 
     def text_from_bits(self, bits, encoding='utf-8', errors='surrogatepass'):
-        print(bits)
         n = int(bits.replace(" ", ""), 2)
         hex_string = '%x' % n
         nlen = len(hex_string)
