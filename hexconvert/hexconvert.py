@@ -31,15 +31,40 @@ class hexconvert(object):
             await send_cmd_help(ctx)
     
     @hexconvert.command(pass_context=True, name="toascii")
-    async def _toascii(self, ctx, hexadecimal: str):
+    async def _toascii(self, ctx, hexadecimal: str, user : discord.Member=None):
         """Convert an appended Hex string to ASCII. If there are spaces in the Hex string it must be encased in quotes."""
-        await self.bot.say(self.convert.text_from_bits(hexadecimal))
+
+        await self.bot.say("{}:\n{}".format(user.mention, self.convert.text_from_bits(hexadecimal)) if user else self.convert.text_from_bits(hexadecimal))
+        
+        channel = ctx.message.channel
+        author = ctx.message.author
+        server = author.server
+        has_permissions = channel.permissions_for(server.me).manage_messages
+        
+        if not has_permissions:
+            await self.bot.say("I'm not allowed to delete messages.")
+            return
+        
+        await self.bot.delete_message(ctx.message)
     
     @hexconvert.command(pass_context=True, name="tohex")
-    async def _tohex(self, ctx, ascii: str):
+    async def _tohex(self, ctx, ascii: str, user : discord.Member=None):
         """Convert an appended ASCII string to Hex. If there are spaces in the ASCII string it must be encased in quotes."""
-        await self.bot.say(self.convert.text_to_bits(ascii))
+
+        await self.bot.say("{}:\n{}".format(user.mention, self.convert.text_to_bits(ascii)) if user else self.convert.text_to_bits(ascii))
+        
+        channel = ctx.message.channel
+        author = ctx.message.author
+        server = author.server
+        has_permissions = channel.permissions_for(server.me).manage_messages
+        
+        if not has_permissions:
+            await self.bot.say("I'm not allowed to delete messages.")
+            return
+        
+        await self.bot.delete_message(ctx.message)
     
 def setup(bot):
     n = hexconvert(bot)
     bot.add_cog(n)
+    
