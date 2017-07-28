@@ -1,0 +1,322 @@
+{ 
+    "reddit" : {
+        "member" : ["Reddit"],
+        "leadroom" : false,
+        "leadroomroles" : ["officer", "coleader", "leader"],
+        "lead" : ["Reddit"],
+        "rename" : "Reddit TF",
+        "notify" : "211359862301523969"
+    },
+    "absolute" : {
+        "member" : ["Absolute"],
+        "leadroom" : true,
+        "leadroomroles" : ["coleader", "lead"],
+        "lead" : ["Absolute", "AbsoluteLead"],
+        "rename" : "Absolute",
+        "notify" : "216301209978404867"
+    },
+    "alpha" : {
+        "member" : ["Alpha", "Affiliate"],
+        "leadroom" : true,
+        "leadroomroles" : ["coleader", "leader"],
+        "lead" : ["Alpha", "Affiliate"],
+        "rename" : "Alpha",
+        "notify" : "320441624821891072"
+    },
+    "bing" : {
+        "member" : ["Bing"],
+        "leadroom" : true,
+        "leadroomroles" : ["officer", "coleader", "leader"],
+        "lead" : ["Bing", "BingLead"],
+        "rename" : "Bing",
+        "notify" : "231246373654233088"
+    },
+    "black" : {
+        "member" : ["Black"],
+        "leadroom" : true,
+        "leadroomroles" : ["officer", "coleader", "leader"],
+        "lead" : ["Black", "BlackLead"],
+        "rename" : "Black",
+        "notify" : "336543191102914560"
+    },
+    "boom" : {
+        "member" : ["Boom"],
+        "leadroom" : false,
+        "leadroomroles" : ["officer", "coleader", "leader"],
+        "lead" : ["Boom"],
+        "rename" : "Boom",
+        "notify" : "185485325991280640"
+    },
+    "bootcamp" : {
+        "member" : ["Bootcamp"],
+        "leadroom" : true,
+        "leadroomroles" : ["officer", "coleader", "leader"],
+        "lead" : ["Bootcamp", "BootcampLead"],
+        "rename" : "Bootcamp",
+        "notify" : "184860879194554370"
+    },
+    "chill" : {
+        "member" : ["Chill"],
+        "leadroom" : true,
+        "leadroomroles" : ["officer", "coleader", "leader"],
+        "lead" : ["Chill", "ChillLead"],
+        "rename" : "Chill",
+        "notify" : "207690717030645761"
+    },
+    "cobalt" : {
+        "member" : ["Cobalt"],
+        "leadroom" : false,
+        "leadroomroles" : ["officer", "coleader", "leader"],
+        "lead" : ["Cobalt"],
+        "rename" : "Cobalt",
+        "notify" : "270997835594334228"
+    },
+    "corona" : {
+        "member" : ["Corona"],
+        "leadroom" : true,
+        "leadroomroles" : ["officer", "coleader", "leader"],
+        "lead" : ["Corona", "CoronaLead"],
+        "rename" : "Corona",
+        "notify" : "203287113297428480"
+    },
+    "cowboys" : {
+        "member" : ["Cowboys"],
+        "leadroom" : true,
+        "leadroomroles" : ["officer", "coleader", "leader"],
+        "lead" : ["Cowboys", "CowboysLead"],
+        "rename" : "Cowboys",
+        "notify" : "335513886453137408"
+    },
+    "dirtbags" : {
+        "member" : ["Dirtbags"],
+        "leadroom" : true,
+        "leadroomroles" : ["officer", "coleader", "leader"],
+        "lead" : ["Dirtbags", "DirtbagsLead"],
+        "rename" : "Dirtbags",
+        "notify" : "302546171120058368"
+    },
+    "element" : {
+        "member" : ["Element"],
+        "leadroom" : false,
+        "leadroomroles" : ["officer", "coleader", "leader"],
+        "lead" : ["Element"],
+        "rename" : "Bootcamp",
+        "notify" : "211543966888361984"
+    },
+    "esoteric" : {
+        "member" : ["Esoteric"],
+        "leadroom" : true,
+        "leadroomroles" : ["officer", "coleader", "leader"],
+        "lead" : ["Esoteric", "EsotericLead"],
+        "rename" : "Bootcamp",
+        "notify" : "185462413833928704"
+    },
+    "fire" : {
+        "member" : ["Fire"],
+        "leadroom" : true,
+        "leadroomroles" : ["officer", "coleader", "leader"],
+        "lead" : ["Fire", "Firelead"],
+        "rename" : "replacewithfireemoji Fire replacewithfireemoji",
+        "notify" : "302761720454053888"
+    },
+    "freeze" : {
+        "member" : ["Freeze"],
+        "leadroom" : false,
+        "leadroomroles" : ["officer", "coleader", "leader"],
+        "lead" : ["Freeze"],
+        "rename" : "Freeze",
+        "notify" : "260424383602884620"
+    },
+    "fun" : {
+        "member" : ["Fun"],
+        "leadroom" : true,
+        "leadroomroles" : ["officer", "coleader", "leader"],
+        "lead" : ["Fun", "FunLead"],
+        "rename" : "Fun",
+        "notify" : "240559407379775488"
+    },
+    "ghosts" : {
+        "member" : ["Affiliate", "Ghosts"],
+        "leadroom" : true,
+        "leadroomroles" : ["officer", "coleader", "leader"],
+        "lead" : ["Affiliate", "Ghosts", "GhostsLead"],
+        "rename" : "Ghosts",
+        "notify" : "316455646470078464"
+    },
+    "infinity" : {
+        "member" : ["Infinity"],
+        "leadroom" : true,
+        "leadroomroles" : ["officer", "coleader", "leader"],
+        "lead" : ["Infinity", "InfinityLead"],
+        "rename" : "Infinity",
+        "notify" : "187550823096516608"
+    },
+    "misfits" : {
+        "member" : ["Misfits"],
+        "leadroom" : true,
+        "leadroomroles" : ["officer", "coleader", "leader"],
+        "lead" : ["Misfits", "MisfitsLead"],
+        "rename" : "Misfits",
+        "notify" : "188333933472120834"
+    },
+    "misfitsacademy" : {
+        "member" : ["MisfitsAcademy"],
+        "leadroom" : true,
+        "leadroomroles" : ["officer", "coleader", "leader"],
+        "lead" : ["MisfitsAcademy", "MisfitsAcademyLead"],
+        "rename" : "Misfits Academy",
+        "notify" : "213795469527220226"
+    },
+    "narwhals" : {
+        "member" : ["Narwhals"],
+        "leadroom" : true,
+        "leadroomroles" : ["officer", "coleader", "leader"],
+        "lead" : ["Narwhals", "NarwhalsLead"],
+        "rename" : "Narwhals",
+        "notify" : "336614088044183553"
+    },
+    "neon" : {
+        "member" : ["Neon"],
+        "leadroom" : true,
+        "leadroomroles" : ["officer", "coleader", "leader"],
+        "lead" : ["Neon", "NeonLead"],
+        "rename" : "Neon",
+        "notify" : "188074149900582913"
+    },
+    "phoenix" : {
+        "member" : ["Phoenix"],
+        "leadroom" : false,
+        "leadroomroles" : ["officer", "coleader", "leader"],
+        "lead" : ["Phoenix"],
+        "rename" : "Phoenix",
+        "notify" : "285229494543843328"
+    },
+    "ratpack" : {
+        "member" : ["Rat Pack"],
+        "leadroom" : false,
+        "leadroomroles" : ["officer", "coleader", "leader"],
+        "lead" : ["Rat Pack"],
+        "rename" : "Rat Pack",
+        "notify" : "322039494259900417"
+    },
+    "rekt" : {
+        "member" : ["Affiliate", "Rekt"],
+        "leadroom" : true,
+        "leadroomroles" : ["officer", "coleader", "leader"],
+        "lead" : ["Affiliate", "Rekt"],
+        "rename" : "Rekt",
+        "notify" : "333684058402062336"
+    },
+    "savages" : {
+        "member" : ["Savages"],
+        "leadroom" : true,
+        "leadroomroles" : ["officer", "coleader", "leader"],
+        "lead" : ["Savages", "SavageLead"],
+        "rename" : "Savages",
+        "notify" : "210063655956512768"
+    },
+    "seals" : {
+        "member" : ["Affiliate", "Seals"],
+        "leadroom" : true,
+        "leadroomroles" : ["officer", "coleader", "leader"],
+        "lead" : ["Affiliate", "Seals"],
+        "rename" : "Seals",
+        "notify" : "296266483372392448"
+    },
+    "smoke" : {
+        "member" : ["Smoke"],
+        "leadroom" : false,
+        "leadroomroles" : ["officer", "coleader", "leader"],
+        "lead" : ["Smoke"],
+        "rename" : "Smoke",
+        "notify" : "269301018234322951"
+    },
+    "snow" : {
+        "member" : ["Snow"],
+        "leadroom" : true,
+        "leadroomroles" : ["officer", "coleader", "leader"],
+        "lead" : ["Snow", "SnowLead"],
+        "rename" : "Snow",
+        "notify" : "234757519707209728"
+    },
+    "trichon1.0" : {
+        "member" : ["Trichon", "trichon1.0"],
+        "leadroom" : true,
+        "leadroomroles" : ["officer", "coleader", "leader"],
+        "lead" : ["Trichon", "TrichonLead", "trichon1.0"],
+        "rename" : "Trichon 1.0",
+        "notify" : "206096638320574464"
+    },
+    "trichon2.0" : {
+        "member" : ["Trichon", "trichon2.0"],
+        "leadroom" : true,
+        "leadroomroles" : ["officer", "coleader", "leader"],
+        "lead" : ["Trichon", "TrichonLead", "trichon2.0"],
+        "rename" : "Trichon 2.0",
+        "notify" : "206097134754332673"
+    },
+    "trichon2.1" : {
+        "member" : ["Trichon", "trichon2.0"],
+        "leadroom" : true,
+        "leadroomroles" : ["officer", "coleader", "leader"],
+        "lead" : ["Trichon", "TrichonLead", "trichon2.0"],
+        "rename" : "Trichon 2.1",
+        "notify" : "257366323326222336"
+    },
+    "trichon2.2" : {
+        "member" : ["Trichon", "trichon2.2"],
+        "leadroom" : true,
+        "leadroomroles" : ["officer", "coleader", "leader"],
+        "lead" : ["Trichon", "TrichonLead", "trichon2.2"],
+        "rename" : "Trichon 2.2",
+        "notify" : "323565756145205249"
+    },
+    "trichon3.0" : {
+        "member" : ["Trichon", "trichon3.0"],
+        "leadroom" : true,
+        "leadroomroles" : ["officer", "coleader", "leader"],
+        "lead" : ["Trichon", "TrichonLead", "trichon3.0"],
+        "rename" : "Trichon 3.0",
+        "notify" : "248132345868058624"
+    },
+    "trichon4.0" : {
+        "member" : ["Trichon", "trichon4.0"],
+        "leadroom" : true,
+        "leadroomroles" : ["officer", "coleader", "leader"],
+        "lead" : ["Trichon", "TrichonLead", "trichon4.0"],
+        "rename" : "Trichon 4.0",
+        "notify" : "253060389657378816"
+    },
+    "trichon5" : {
+        "member" : ["Trichon", "trichon-5"],
+        "leadroom" : true,
+        "leadroomroles" : ["officer", "coleader", "leader"],
+        "lead" : ["Trichon", "TrichonLead", "trichon-5"],
+        "rename" : "Trichon",
+        "notify" : "322903294513250334"
+    },
+    "valhalla" : {
+        "member" : ["Valhalla"],
+        "leadroom" : true,
+        "leadroomroles" : ["officer", "coleader", "leader"],
+        "lead" : ["Valhalla", "valhallaLead"],
+        "rename" : "Valhalla",
+        "notify" : "210990344081375232"
+    },
+    "valkyrie" : {
+        "member" : ["Valkyrie"],
+        "leadroom" : true,
+        "leadroomroles" : ["officer", "coleader", "leader"],
+        "lead" : ["Valkyrie", "ValkyrieLead"],
+        "rename" : "Valkyrie",
+        "notify" : "210990421634056194"
+    },
+    "whisky" : {
+        "member" : ["Whisky"],
+        "leadroom" : true,
+        "leadroomroles" : ["coleader", "leader"],
+        "lead" : ["Whisky", "WhiskyLead"],
+        "rename" : "Whisky",
+        "notify" : "189339679072583680"
+    }
+}

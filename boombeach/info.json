@@ -1,0 +1,9 @@
+{
+    "AUTHOR" : "Annihilator6000",
+    "SHORT" : "/r/BoomBeach Discord Tools",
+    "DESCRIPTION" : "Various tools for the /r/BoomBeach Discord server.",
+    "DISABLED" : false,
+    "NAME" : "boombeach",
+    "TAGS" : ["Boom Beach", "boombeach", "BB"],
+    "INSTALL_MSG" : "/r/BoomBeach Discord tools - these tools are specific to the BB server and will likely not work in other servers. https://github.com/Annihilator6000/A6k-Cogs"
+}
