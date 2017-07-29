@@ -559,9 +559,7 @@ class BoomBeach:
         #3 months (2nd time), 
         #indefinite suspension/deverification vote (3rd time)
         #```
-        
-        #chan = '260933604706615296' #bot-testing channel
-        #chan = '232939832849072130' #recruitmentqueue channel
+
         if self.rqobj["settings"]["rulespost"] is not None:
             try:
                 oldrules = await self.bot.get_message(self.bot.get_channel(self.queuechannel), self.rqobj["settings"]["rulespost"])
