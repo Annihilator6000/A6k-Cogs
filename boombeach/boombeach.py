@@ -332,21 +332,10 @@ class BoomBeach:
         if self.queuechannel != ctx.message.channel.id: # recruitmentqueue channel
             return
         msgdel.append(ctx.message)
-        #print("self.rqobj[\"TFs\"] - {}".format(self.rqobj["TFs"]))
-        #print("self.rqobj[\"TFs\"].keys() - {}".format(self.rqobj["TFs"].keys()))
         tflist = ", ".join(sorted(list(self.rqobj["TFs"])))
-        #tflist = list(self.rqobj["TFs"].keys())
-        #tflist = ""
-        #print("TF keys:")
-        #for key in self.rqobj["TFs"].keys():
-        #    tflist += key
-        #tflist = ""
-        #for key in self.rqobj["TFs"].keys():
-        #    tflist += key
-        #tflistobj = self.rqobj["TFs"]
-        #tflist = ", ".join(tflistobj.keys())
+
         listmessage = await self.bot.say("The following TFs/TF families can be added to the queue:\n\n```\n{}\n```\n\nIf there is an issue with the list please contact Annihilator6000 (`@Annihilator6000#2526`).".format(tflist))
-        await asyncio.sleep(30)
+        await asyncio.sleep(60)
         msgdel.append(listmessage)
         await self._delnewmembermsgs()
     
