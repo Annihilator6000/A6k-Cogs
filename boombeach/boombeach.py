@@ -540,7 +540,8 @@ class BoomBeach:
             return
         if self.queuechannel != ctx.message.channel.id: # recruitmentqueue channel
             return
-        
+        msgdel = []
+        msgdel.append(ctx.message)
         #If you want to recruit in redditbb, please post here. 
         #
         #***RULES***
@@ -559,12 +560,29 @@ class BoomBeach:
         #indefinite suspension/deverification vote (3rd time)
         #```
         
-        chan = '260933604706615296' #bot-testing channel
+        #chan = '260933604706615296' #bot-testing channel
         #chan = '232939832849072130' #recruitmentqueue channel
+        if self.rqobj["settings"]["rulespost"] is not None:
+            try:
+                oldrules = await self.bot.get_message(self.bot.get_channel(self.queuechannel), self.rqobj["settings"]["rulespost"])
+                oldrulesnotify = await self.bot.say("The rules are already posted. Would you like to replace them?")
+                msgdel.append(oldrulesnotify)
+                isvalid = await self.bot.wait_for_message(timeout=30, author=ctx.message.author, channel=ctx.message.channel)
+                if isvalid is not None:
+                    yescheck = ["yes", "Yes", "yes.", "Yes.", "Ye", "ye", "Y", "y"]
+                    msgdel.append(isvalid)
+                    if isvalid.content in yescheck:
+                        msgdel.append(oldrules)
+                    else:
+                        await self._delnewmembermsgs(msgdel)
+                        return
+            except:
+                pass
         rules = "If you want to recruit in redditbb, please post here.\n\n***RULES***\n```md\n1. Post on time\n2. If your TF is full, take yourself off the queue.\n3. Include The Recruitment Form Link:\n```\n<https://docs.google.com/forms/d/e/1FAIpQLScVYQtm-sINS6TnBewiGS0ac9jOL0e2cZT3TFtJKd71aXC1aw/viewform?c=0&w=1>\n\n***VIOLATIONS***\n```\nIf you violate the rules:\nyour TF cannot be in the queue for 1 month (1st time),\n3 months (2nd time),\nindefinite suspension/deverification vote (3rd time)\n```"
-        rulespost = await self.bot.send_message(chan, rules)
+        rulespost = await self.bot.send_message(self.bot.get_channel(self.queuechannel), rules)
         self.rqobj["settings"]["rulespost"] = str(rulespost.id)
-        await self.bot.delete_message(ctx.message)
+        #await self.bot.delete_message(ctx.message)
+        await self._delnewmembermsgs(msgdel)
     
     def queue_get(self):
         if len(self.rqobj["queue"]) < 1:
