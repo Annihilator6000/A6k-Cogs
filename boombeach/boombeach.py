@@ -165,8 +165,9 @@ class BoomBeach:
             #sentmessage = await self.bot.send_message(chan, queuemessage)
             sentmessage = await self.bot.send_message(self.bot.get_channel(self.queuechannel), queuemessage)
             await asyncio.sleep(60)
-            await self.bot.delete_message(ctx.message)
-            await self.bot.delete_message(sentmessage)
+            self.msgdel.append(ctx.message)
+            self.msgdel.append(sentmessage)
+            await self._delnewmembermsgs()
             
             # trichon council room for @here ping - 206092939112349697
             #
@@ -193,13 +194,14 @@ class BoomBeach:
         if self.queuechannel != ctx.message.channel.id: # recruitmentqueue channel
             return
         
+        self.msgdel.append(ctx.message)
         tflist = ", ".join(self.queue["TFs"].keys())
         if tf is None:
             #tflist = ", ".join(qf["TFs"].keys())
             addmessage = await self.bot.say("You didn't specify a TF to add. Please specify your TF from the list and use `{}queue add <TF>`: \n```\n{}\n```".format(tflist, ctx.prefix))
             await asyncio.sleep(30)
-            await self._delnewmembermsgs(ctx.message)
-            await self._delnewmembermsgs(addmessage)
+            self.msgdel.append(addmessage)
+            await self._delnewmembermsgs()
         else:
             if tf.lower() in tflist.lower():
                 # check to see if the tf is already on the queue
@@ -208,8 +210,8 @@ class BoomBeach:
                         if tf.lower() in entry["TF"]:
                             addmessage = await self.bot.say("{} is already in the queue and can not be added more than once. Please wait until {} is off the queue and try again.".format(tf, tf))
                             await asyncio.sleep(30)
-                            await self._delnewmembermsgs(ctx.message)
-                            await self._delnewmembermsgs(addmessage)
+                            self.msgdel.append(addmessage)
+                            await self._delnewmembermsgs()
                 admin = False
                 adminroles = ["Moderators", "Global Operators"]
                 userroles = ", ".join(r.name for r in ctx.message.author.roles)
@@ -242,18 +244,18 @@ class BoomBeach:
                     await self._queue_post()
                     addedmsg = await self.bot.say("{} has been added to the queue.".format(tf))
                     await asyncio.sleep(30)
-                    await self._delnewmembermsgs(ctx.message)
-                    await self._delnewmembermsgs(addedmsg)
+                    self.msgdel.append(addedmsg)
+                    await self._delnewmembermsgs()
                 else:
                     norole = await self.bot.say("You can't add an entry for a TF that you're not a member of. If you need assistance with this please contact a GO.")
                     await asyncio.sleep(30)
-                    await self._delnewmembermsgs(ctx.message)
-                    await self._delnewmembermsgs(norole)
+                    self.msgdel.append(norole)
+                    await self._delnewmembermsgs()
             else:
                 notvalid = self.bot.say("That's not a valid TF value. Please see the list using `{}queue listtfs`. If there is an issue with the list please contact Annihilator6000 (`@Annihilator6000#2526`).".format(ctx.prefix))
                 await asyncio.sleep(30)
-                await self._delnewmembermsgs(ctx.message)
-                await self._delnewmembermsgs(notvalid)
+                self.msgdel.append(notvalid)
+                await self._delnewmembermsgs()
     
     @rqueue.command(no_pm=True, pass_context=True, name="remove")
     async def queue_remove(self, ctx, *, tf):
@@ -262,6 +264,7 @@ class BoomBeach:
             return
         if self.queuechannel != ctx.message.channel.id: # recruitmentqueue channel
             return
+        self.msgdel.append(ctx.message)
         admin = False
         adminroles = ["Moderators", "Global Operators"]
         userroles = ", ".join(r.name for r in ctx.message.author.roles)
@@ -271,14 +274,14 @@ class BoomBeach:
         if admin is False and tf.lower() not in userroles.lower():
             errormsg = await self.bot.say("You're not allowed to remove a TF that you don't have roles for. Please contact a GO if you need assistance with this.")
             asyncio.sleep(30)
-            await self._delnewmembermsgs(ctx.message)
-            await self._delnewmembermsgs(errormsg)
+            self.msgdel.append(errormsg)
+            await self._delnewmembermsgs())
         tflist = ", ".join(self.queue["TFs"].keys())
         if tf.lower() not in tflist.lower():
             errormsg = await self.bot.say("That TF isn't in my list. Please check `{}queue listtfs` for valid names and try again. If this message is in error please contact Annihilator6000 (`@Annihilator6000#2526`)".format(ctx.prefix))
             asyncio.sleep(30)
-            await self._delnewmembermsgs(ctx.message)
-            await self._delnewmembermsgs(errormsg)
+            self.msgdel.append(errormsg)
+            await self._delnewmembermsgs()
         # self.queue["queue"] {
         # "1" : {
         #     "position" : 1
@@ -300,8 +303,8 @@ class BoomBeach:
         if removednumber is None:
             removemsg = await self.bot.say("The specified TF wasn't found in the queue, or there might have been an error.")
             await asyncio.sleep(30)
-            await self._delnewmembermsgs(ctx.message)
-            await self._delnewmembermsgs(removemsg)
+            self.msgdel.append(removemsg)
+            await self._delnewmembermsgs()
         else:
             count = removednumber
             while count < len(self.queue["queue"]):
@@ -318,8 +321,8 @@ class BoomBeach:
             await self._queue_post() # update the queue on discord
             removemsg = await self.bot.say("{} has been removed from the queue. Have a nice day.".format(tf))
             await asyncio.sleep(30)
-            await self._delnewmembermsgs(ctx.message)
-            await self._delnewmembermsgs(removemsg)
+            self.msgdel.append(removemsg)
+            await self._delnewmembermsgs()
         
     @rqueue.command(no_pm=True, pass_context=True, name="listtfs")
     async def queue_listtfs(self, ctx):
@@ -328,11 +331,12 @@ class BoomBeach:
             return
         if self.queuechannel != ctx.message.channel.id: # recruitmentqueue channel
             return
+        self.msgdel.append(ctx.message)
         tflist = ", ".join(self.queue["TFs"].keys())
         listmessage = self.bot.say("The following TFs/TF families can be added to the queue:\n\n```\n{}\n```\n\nIf there is an issue with the list please contact Annihilator6000 (`@Annihilator6000#2526`).".format(tflist))
         await asyncio.sleep(30)
-        await self._delnewmembermsgs(ctx.message)
-        self._delnewmembermsgs(listmessage)
+        self.msgdel.append(listmessage)
+        await self._delnewmembermsgs()
     
     @rqueue.command(no_pm=True, pass_context=True, name="move")
     async def queue_move(self, ctx, *, direction:str=None, tf):
@@ -341,6 +345,7 @@ class BoomBeach:
             return
         if self.queuechannel != ctx.message.channel.id: # recruitmentqueue channel
             return
+        self.msgdel.append(ctx.message)
         direction = direction.lower()
         admin = False
         adminroles = ["Moderators", "Global Operators"]
@@ -353,26 +358,26 @@ class BoomBeach:
         if tf.lower() not in tflist.lower():
             notifymsg = await self.bot.say("That is not a valid TF. Please select one from `{}queue listtfs` and try again. If you require assistance please contact a GO.".format(ctx.prefix))
             asyncio.sleep(30)
-            await self._delnewmembermsgs(ctx.message)
-            await self._delnewmembermsgs(notifymsg)
+            self.msgdel.append(notifymsg)
+            await self._delnewmembermsgs()
             return
         if admin is False and tf not in userroles:
             notifymsg = await self.bot.say("You don't have a role for {}. You are only able to move your own TF. If you require assistance please contact a GO.".format(tf))
             asyncio.sleep(30)
-            await self._delnewmembermsgs(ctx.message)
-            await self._delnewmembermsgs(notifymsg)
+            self.msgdel.append(notifymsg)
+            await self._delnewmembermsgs()
             return
         if admin is False and direction.lower() == "up":
             notifymsg = await self.bot.say("You are not allowed to move your TF up the queue. You may only move it down. If you require assistance please contact a GO.")
             asyncio.sleep(30)
-            await self._delnewmembermsgs(ctx.message)
-            await self._delnewmembermsgs(notifymsg)
+            self.msgdel.append(notifymsg)
+            await self._delnewmembermsgs()
             return
         if direction.lower() not in ["up", "down"]:
             notifymsg = await self.bot.say("`direction` can only be `up` or `down`. Only GOs can use `up`. Please try again.".format(tf))
             asyncio.sleep(30)
-            await self._delnewmembermsgs(ctx.message)
-            await self._delnewmembermsgs(notifymsg)
+            self.msgdel.append(notifymsg)
+            await self._delnewmembermsgs()
             return
         # find the TF
         currentposition = None
@@ -384,15 +389,15 @@ class BoomBeach:
         if currentposition is None:
             notifymsg = await self.bot.say("{} not found in the queue. If this is an error please contact Annihilator6000 (`@Annihilator6000#2526`)".format(tf))
             asyncio.sleep(30)
-            await self._delnewmembermsgs(ctx.message)
-            await self._delnewmembermsgs(notifymsg)
+            self.msgdel.append(notifymsg)
+            await self._delnewmembermsgs()
             return
         # check if it's the first or last element and being moved the wrong way - dict error will ensue
         if (currentposition == 0 and direction == "up") or (currentposition == len(self.queue["queue"]) and direction == "down"):
             notifymsg = await self.bot.say("I can't move {} {}, because they are currently at the {} of the queue.".format(tf, direction, "begining" if direction == "up" else "end"))
             asyncio.sleep(30)
-            await self._delnewmembermsgs(ctx.message)
-            await self._delnewmembermsgs(notifymsg)
+            self.msgdel.append(notifymsg)
+            await self._delnewmembermsgs()
             return
 
         newpos = None
@@ -420,8 +425,8 @@ class BoomBeach:
         await self._queue_post() # update Discord post
         notifymessage = await self.bot.say("{} has been successfully moved 1 position {} the queue.".format(tf, direction))
         asyncio.sleep(30)
-        await self._delnewmembermsgs(ctx.message)
-        await self._delnewmembermsgs(notifymessage)
+        self.msgdel.append(notifymessage)
+        await self._delnewmembermsgs()
     '''
     @queue.command(no_pm=True, pass_context=True, name="ack")
     async def queue_ack(self, ctx):
@@ -437,7 +442,7 @@ class BoomBeach:
             return
         if self.queuechannel != ctx.message.channel.id: # recruitmentqueue channel
             return
-        
+        self.msgdel.append(ctx.message)
         # check tf here against list...
         # self.queue["violations"]
         # in violations it will have the TF name and time added (as a unix time string)
@@ -465,24 +470,24 @@ class BoomBeach:
         if admin is False:
             notifymsg = await self.bot.say("This is a GO command. If someone is in violation of the rules please contact a GO.")
             asyncio.sleep(30)
-            await self._delnewmembermsgs(ctx.message)
-            await self._delnewmembermsgs(notifymsg)
+            self.msgdel.append(notifymsg)
+            await self._delnewmembermsgs()
             return
         tflist = ", ".join(self.queue["TFs"].keys())
         if tf.lower() not in tflist.lower():
             # might be able to use proper case, or whatever it's called
             notifymsg = await self.bot.say("That is not a valid TF. Please select one from `{}queue listtfs` and try again. If you require assistance please contact a GO.".format(ctx.prefix))
             asyncio.sleep(30)
-            await self._delnewmembermsgs(ctx.message)
-            await self._delnewmembermsgs(notifymsg)
+            self.msgdel.append(notifymsg)
+            await self._delnewmembermsgs()
             return
         if tf.lower() in tflist.lower(): # probably not going to work.
             if self.queue["violations"][tf]["count"] == 3:
                 # already at the max
                 notifymsg = await self.bot.say("{} already has 3 queue violations, and is indefinately suspended from the queue.".format(tf))
                 asyncio.sleep(30)
-                await self._delnewmembermsgs(ctx.message)
-                await self._delnewmembermsgs(notifymsg)
+                self.msgdel.append(notifymsg)
+                await self._delnewmembermsgs()
                 return
             self.queue["violations"][tf]["count"] += 1
             timeout = datetime.utcnow()
@@ -505,8 +510,8 @@ class BoomBeach:
         violationtext = { 1 : "for 30 days", 2 : "for 90 days", 3 : "indefinately"}
         viomessage = self.bot.say("{}'s violation has been added with reason \"{}\" and will not be able to request {}.".format(tf, reason, violationtext[self.queue["violations"][tf]["count"]]))
         asyncio.sleep(30)
-        await self._delnewmembermsgs(ctx.message)
-        await self._delnewmembermsgs(notifymsg)
+        self.msgdel.append(viomessage)
+        await self._delnewmembermsgs()
         
     @rqueue.command(no_pm=True, pass_context=True, name="post")
     async def queue_post(self, ctx):
