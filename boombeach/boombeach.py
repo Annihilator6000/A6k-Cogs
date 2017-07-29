@@ -530,7 +530,7 @@ class BoomBeach:
             return
         if self.queuechannel != ctx.message.channel.id: # recruitmentqueue channel
             return
-        self._queue_post()
+        await self._queue_post()
         await self.bot.delete_message(ctx.message)
     
     @rqueue.command(no_pm=True, pass_context=True, name="rules")
@@ -607,20 +607,27 @@ class BoomBeach:
     async def _queue_post(self):
         # posts or updates the current queue
         queuedata = self.queue_get()
-        if self.rqobj["settings"]["violations"] is not None:
+        queuevio = ""
+        if len(self.rqobj["violations"]) > 0:
             queuevio = self.queue_violatation() # get vio data from data file and add it here
-        else:
-            queuevio = ""
-        queuepost = "__Recruitment Queue__\nFirst date is the changeover, when the TF's post can be swapped in. Earliest posting time is 00:00 UTC on that date. <https://time.is/UTC>\n" + queuevio + "\n```md\nCurrent Queue\n=============\n\n" + queuedata + "\n```"
-        chan = '260933604706615296' #bot-testing channel
+        #else:
+        #    queuevio = ""
+        #queuepost = "__Recruitment Queue__\nFirst date is the changeover, when the TF's post can be swapped in. Earliest posting time is 00:00 UTC on that date. <https://time.is/UTC>\n" + queuevio + "\n```md\nCurrent Queue\n=============\n\n" + queuedata + "\n```"
+        #queuepost = "__Recruitment Queue__\nFirst date is the changeover, when the TF's post can be swapped in. Earliest posting time is 00:00 UTC on that date. <https://time.is/UTC>\n{}\n```md\nCurrent Queue\n=============\n\n{}\n```".format(queuevio, queuedata)
+        queuepost = "__Recruitment Queue__\nFirst date is the changeover, when the TF's post can be swapped in. Earliest posting time is 00:00 UTC on that date. <https://time.is/UTC>\n"
+        queuepost += "{}".format(queuevio)
+        queuepost += "\n```md\nCurrent Queue\n=============\n\n"
+        queuepost += queuedata
+        queuepost += "\n```"
+        #chan = '260933604706615296' #bot-testing channel
         #chan = '232939832849072130' #recruitmentqueue channel
         if self.rqobj["settings"]["queuepost"] is not None:
             # have the bot edit the post instead of post a new one
-            currentmsg = await self.bot.get_message(self.bot.get_channel(chan), self.rqobj["settings"]["queuepost"])
+            currentmsg = await self.bot.get_message(self.bot.get_channel(self.queuechannel), self.rqobj["settings"]["queuepost"])
             await self.bot.edit_message(currentmsg, queuepost)
         else:
             # if there isn't a post (deleted, first run, etc) then make a new one
-            newqueue = await self.bot.send_message(chan, queuepost)
+            newqueue = await self.bot.send_message(self.bot.get_channel(self.queuechannel), queuepost)
             self.rqobj["settings"]["queuepost"] = str(newqueue.id)
         dataIO.save_json(queue_file, self.rqobj)
     
@@ -639,10 +646,14 @@ class BoomBeach:
                 viodate = date.fromtimestamp(self.rqobj["violations"][tf]["time"])
                 vio = "{} {} and can not be on the queue until {}".format(tf, self.rqobj["violations"][tf]["reason"], viodate.ctime().split()[1] + " " + viodate.ctime().split()[2])
                 violist.append()
+        s = ""
         if violist is not None:
-            return "\n" + "\n".join(violist) + "\n"
-        else:
-            return ""
+            #return "\n" + "\n".join(violist) + "\n"
+            #return "\n{}\n".format("\"n\"".join(violist))
+            s = "\n{}\n".format("\"n\"".join(violist))
+        #else:
+        #    return ""
+        return s
     
     async def queue_remove(self, tf):
         # internal function for the bot to remove a tf from the queue from the queue loop
@@ -719,6 +730,7 @@ class BoomBeach:
                         pinglist.append("<@" + pingperson + ">")
                     pingmsg = await self.bot.send_message(self.bot.get_channel(self.queueping), "{} - **Reminder**, you will be able to put up your recruitment post for {} in just under 4 hours.".format(" ".join(pinglist), self.rqobj["queue"]["1"]["TF"]))
                     self.rqobj["queue"]["1"]["ackpost"] = pingmsg.id
+                    dataIO.save_json(queue_file, self.rqobj)
                 # check if #1 is past ping time and #2 is within their ping window
                 if len(self.rqobj["queue"]) > 1:
                     if now < self.rqobj["queue"]["2"]["posttime"] and now > self.rqobj["queue"]["2"]["pingtime"] and self.rqobj["queue"]["2"]["ackpost"] is None:
@@ -731,6 +743,7 @@ class BoomBeach:
                             pinglist.append("<@" + pingperson + ">")
                         pingmsg = await self.bot.send_message(self.bot.get_channel(self.queueping), "{} - **Reminder**, you will be able to put up your recruitment post for {} in just under 4 hours.".format(" ".join(pinglist), self.rqobj["queue"]["2"]["TF"]))
                         self.rqobj["queue"]["2"]["ackpost"] = pingmsg.id
+                        dataIO.save_json(queue_file, self.rqobj)
             await asyncio.sleep(300)
     
     @commands.command(pass_context=True, no_pm=True)
