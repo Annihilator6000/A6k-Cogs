@@ -275,7 +275,7 @@ class BoomBeach:
             errormsg = await self.bot.say("You're not allowed to remove a TF that you don't have roles for. Please contact a GO if you need assistance with this.")
             asyncio.sleep(30)
             self.msgdel.append(errormsg)
-            await self._delnewmembermsgs())
+            await self._delnewmembermsgs()
         tflist = ", ".join(self.queue["TFs"].keys())
         if tf.lower() not in tflist.lower():
             errormsg = await self.bot.say("That TF isn't in my list. Please check `{}queue listtfs` for valid names and try again. If this message is in error please contact Annihilator6000 (`@Annihilator6000#2526`)".format(ctx.prefix))
