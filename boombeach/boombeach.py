@@ -639,7 +639,7 @@ class BoomBeach:
         #           "count" : #
         #           "time" : unixtime/null
         #           "indefinite" : True/False
-        violist = None
+        violist = []
         for tf in self.rqobj["violations"]:
             if self.rqobj["violations"][tf]["time"] is not None:
                 # valid vio
@@ -647,7 +647,7 @@ class BoomBeach:
                 vio = "{} {} and can not be on the queue until {}".format(tf, self.rqobj["violations"][tf]["reason"], viodate.ctime().split()[1] + " " + viodate.ctime().split()[2])
                 violist.append()
         s = ""
-        if violist is not None:
+        if len(violist) > 0:
             #return "\n" + "\n".join(violist) + "\n"
             #return "\n{}\n".format("\"n\"".join(violist))
             s = "\n{}\n".format("\"n\"".join(violist))
