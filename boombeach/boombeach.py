@@ -201,18 +201,18 @@ class BoomBeach:
         if tf is None:
             #tflist = ", ".join(qf["TFs"].keys())
             addmessage = await self.bot.say("You didn't specify a TF to add. Please specify your TF from the list and use `{}queue add <TF>`: \n```\n{}\n```".format(tflist, ctx.prefix))
-            await asyncio.sleep(30)
             msgdel.append(addmessage)
+            await asyncio.sleep(30)
             await self._delnewmembermsgs(msgdel)
         else:
             if tf.lower() in tflist.lower():
                 # check to see if the tf is already on the queue
-                if self.rqobj["queue"] is not None:
+                if len(self.rqobj["queue"]) > 0:
                     for entry in self.rqobj["queue"]:
-                        if tf.lower() in entry["TF"]:
+                        if tf.lower() in self.rqobj["queue"][entry]["TF"].lower(): #entry["TF"]:
                             addmessage = await self.bot.say("{} is already in the queue and can not be added more than once. Please wait until {} is off the queue and try again.".format(tf, tf))
-                            await asyncio.sleep(30)
                             msgdel.append(addmessage)
+                            await asyncio.sleep(30)
                             await self._delnewmembermsgs(msgdel)
                 admin = False
                 adminroles = ["Moderators", "Global Operators"]
@@ -257,7 +257,7 @@ class BoomBeach:
                         self.rqobj["queue"][str(position)]["pingtime"] = minusfourhours.timestamp() # ping 4 hours before post is to go up
                         #tempqobj[str(position)]["pingtime"] = minusfourhours.timestamp()
                     else:
-                        getpostday = self.rqobj["queue"][str(position - 1)]["posttime"] + timedelta(days=2)
+                        getpostday = datetime.utcfromtimestamp(self.rqobj["queue"][str(position - 1)]["posttime"]) + timedelta(days=2)
                         postdayutc = datetime(getpostday.year, getpostday.month, getpostday.day)
                         self.rqobj["queue"][str(position)]["posttime"] = postdayutc.timestamp()
                         #tempqobj[str(position)]["posttime"] = tomorrowutc.timestamp()
@@ -268,18 +268,18 @@ class BoomBeach:
                     dataIO.save_json(queue_file, self.rqobj)
                     await self._queue_post()
                     addedmsg = await self.bot.say("{} has been added to the queue.".format(tf))
-                    await asyncio.sleep(30)
                     msgdel.append(addedmsg)
+                    await asyncio.sleep(30)
                     await self._delnewmembermsgs(msgdel)
                 else:
                     norole = await self.bot.say("You can't add an entry for a TF that you're not a member of. If you need assistance with this please contact a GO.")
-                    await asyncio.sleep(30)
                     msgdel.append(norole)
+                    await asyncio.sleep(30)
                     await self._delnewmembermsgs(msgdel)
             else:
-                notvalid = self.bot.say("That's not a valid TF value. Please see the list using `{}queue listtfs`. If there is an issue with the list please contact Annihilator6000 (`@Annihilator6000#2526`).".format(ctx.prefix))
-                await asyncio.sleep(30)
+                notvalid = await self.bot.say("That's not a valid TF value. Please see the list using `{}queue listtfs`. If there is an issue with the list please contact Annihilator6000 (`@Annihilator6000#2526`).".format(ctx.prefix))
                 msgdel.append(notvalid)
+                await asyncio.sleep(30)
                 await self._delnewmembermsgs(msgdel)
     
     @rqueue.command(no_pm=True, pass_context=True, name="remove")
@@ -334,15 +334,33 @@ class BoomBeach:
         else:
             count = removednumber
             while count < len(self.rqobj["queue"]):
-                curposttime = self.rqobj["queue"][str(count)]["posttime"]
-                curpingtime = self.rqobj["queue"][str(count)]["pingtime"]
+                #curposttime = None
+                #curpingtime = None
+                #curposttime = datetime.utcfromtimestamp(self.rqobj["queue"][str(count)]["posttime"])
+                #curpingtime = datetime.utcfromtimestamp(self.rqobj["queue"][str(count)]["pingtime"])
+                #curposttime = self.rqobj["queue"][str(count)]["posttime"]
+                #curpingtime = self.rqobj["queue"][str(count)]["pingtime"]
+                #self.rqobj["queue"][str(count+1)]["posttime"] = self.rqobj["queue"][str(count)]["posttime"]
+                #self.rqobj["queue"][str(count+1)]["pingtime"] = self.rqobj["queue"][str(count)]["pingtime"]
                 self.rqobj["queue"][str(count)] = self.rqobj["queue"][str(count+1)]
+                #print("{}".format(self.rqobj["queue"][str(count)]))
                 self.rqobj["queue"][str(count)]["position"] = count
                 # preserve original post time of previos TF
-                self.rqobj["queue"][str(count)]["posttime"] = curposttime
-                self.rqobj["queue"][str(count)]["pingtime"] = curpingtime
+                #self.rqobj["queue"][str(count)]["posttime"] = curposttime.timestamp()
+                #self.rqobj["queue"][str(count)]["pingtime"] = curpingtime.timestamp()
+                #self.rqobj["queue"][str(count)]["posttime"] = curposttime
+                #self.rqobj["queue"][str(count)]["pingtime"] = curpingtime
                 count += 1
             del self.rqobj["queue"][str(len(self.rqobj["queue"]))]
+            count = removednumber
+            while count <= len(self.rqobj["queue"]):
+                curposttime = datetime.utcfromtimestamp(self.rqobj["queue"][str(count)]["posttime"])
+                curpingtime = datetime.utcfromtimestamp(self.rqobj["queue"][str(count)]["pingtime"])
+                curposttime -= self.queueduration
+                curpingtime -= self.queueduration
+                self.rqobj["queue"][str(count)]["posttime"] = curposttime.timestamp()
+                self.rqobj["queue"][str(count)]["pingtime"] = curpingtime.timestamp()
+                count += 1
             dataIO.save_json(queue_file, self.rqobj)
             await self._queue_post() # update the queue on discord
             removemsg = await self.bot.say("{} has been removed from the queue. Have a nice day.".format(tf))
@@ -615,10 +633,12 @@ class BoomBeach:
                 return ""
             while count <= length:
                 tf = self.rqobj["queue"][str(count)]["TF"]
-                if "Bootcamp" in tf or "Smoke" in tf:
-                    tf = "BC/Smoke"
+                #if "Bootcamp" in tf or "Smoke" in tf:
+                #    tf = "BC/Smoke"
                 tf = tf + ":"
+                posttime = None
                 posttime = datetime.utcfromtimestamp(self.rqobj["queue"][str(count)]["posttime"])
+                postend = None
                 postend = posttime + timedelta(days=1) # end day is the day after
                 queuestring = "{:<9} {}-{}".format(tf, posttime.strftime("%b %d"), postend.strftime("%b %d"))
                 queueobj.append(queuestring)
@@ -693,7 +713,7 @@ class BoomBeach:
         else:
             # then "move" the other entries "up" the list
             count = removednumber
-            while count <= len(self.rqobj["queue"]) and count > 1:
+            while count < len(self.rqobj["queue"]) and count > 1:
                 curposttime = self.rqobj["queue"][str(count)]["posttime"]
                 curpingtime = self.rqobj["queue"][str(count)]["pingtime"]
                 self.rqobj["queue"][str(count)] = self.rqobj["queue"][str(count+1)]
