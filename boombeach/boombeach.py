@@ -222,28 +222,49 @@ class BoomBeach:
                         admin = True
                 if admin is True or tf.lower() in userroles.lower():
                     position = len(self.rqobj["queue"]) + 1
+                    self.rqobj["queue"][str(position)] = {}
                     self.rqobj["queue"][str(position)]["position"] = position
                     self.rqobj["queue"][str(position)]["TF"] = tf
                     self.rqobj["queue"][str(position)]["addedby"] = ctx.message.author.id
                     self.rqobj["queue"][str(position)]["ack"] = False
                     self.rqobj["queue"][str(position)]["ackpost"] = None
                     added = datetime.utcnow()
-                    self.rqobj["queue"][str(position)]["added"] = added
+                    self.rqobj["queue"][str(position)]["added"] = added.timestamp()
+                    '''
+                    added = datetime.utcnow()
+                    tempqobj = {
+                        str(position) : {
+                            "position" : position,
+                            "TF" : tf,
+                            "addedby" : ctx.message.author.id,
+                            "ack" : False,
+                            "ackpost" : None,
+                            "added" : added.timestamp(),
+                            "posttime" : None,
+                            "pingtime" : None
+                        }
+                    }
+                    '''
 
                     if position is 1:
                         # starting a new queue, so set the queue start time/date
                         gettomorrow = added + timedelta(days=1)
-                        tomorrowutc = datetime.datetime(gettomorrow.year, gettomorrow.month, gettomorrow.day)
+                        tomorrowutc = datetime(gettomorrow.year, gettomorrow.month, gettomorrow.day)
                         self.rqobj["settings"]["queuebegin"] = tomorrowutc.timestamp()
                         self.rqobj["queue"][str(position)]["posttime"] = tomorrowutc.timestamp()
+                        #tempqobj[str(position)]["posttime"] = tomorrowutc.timestamp()
                         minusfourhours = tomorrowutc - timedelta(hours=4)
                         self.rqobj["queue"][str(position)]["pingtime"] = minusfourhours.timestamp() # ping 4 hours before post is to go up
+                        #tempqobj[str(position)]["pingtime"] = minusfourhours.timestamp()
                     else:
                         getpostday = self.rqobj["queue"][str(position - 1)]["posttime"] + timedelta(days=2)
-                        postdayutc = datetime.datetime(getpostday.year, getpostday.month, getpostday.day)
+                        postdayutc = datetime(getpostday.year, getpostday.month, getpostday.day)
                         self.rqobj["queue"][str(position)]["posttime"] = postdayutc.timestamp()
+                        #tempqobj[str(position)]["posttime"] = tomorrowutc.timestamp()
                         minusfourhours = postdayutc - timedelta(hours=4)
                         self.rqobj["queue"][str(position)]["pingtime"] = minusfourhours.timestamp() # ping 4 hours before post is to go up
+                        #tempqobj[str(position)]["pingtime"] = minusfourhours.timestamp()
+                    #self.rqobj["queue"].append(tempqobj)
                     dataIO.save_json(queue_file, self.rqobj)
                     await self._queue_post()
                     addedmsg = await self.bot.say("{} has been added to the queue.".format(tf))
@@ -262,7 +283,7 @@ class BoomBeach:
                 await self._delnewmembermsgs(msgdel)
     
     @rqueue.command(no_pm=True, pass_context=True, name="remove")
-    async def queue_remove(self, ctx, *, tf):
+    async def rqueue_remove(self, ctx, tf):
         """Removes a TF from their slot in the recruitment queue."""
         if self.bbserver != ctx.message.server.id:
             return
@@ -598,7 +619,7 @@ class BoomBeach:
                     tf = "BC/Smoke"
                 tf = tf + ":"
                 posttime = datetime.utcfromtimestamp(self.rqobj["queue"][str(count)]["posttime"])
-                postend += timedelta(days=1) # end day is the day after
+                postend = posttime + timedelta(days=1) # end day is the day after
                 queuestring = "{:<9} {}-{}".format(tf, posttime.strftime("%b %d"), postend.strftime("%b %d"))
                 queueobj.append(queuestring)
                 count += 1
@@ -631,7 +652,7 @@ class BoomBeach:
             self.rqobj["settings"]["queuepost"] = str(newqueue.id)
         dataIO.save_json(queue_file, self.rqobj)
     
-    async def queue_violatation(self):
+    def queue_violatation(self):
         # get queue violation data here and return it formatted
 
         #   violations
@@ -643,6 +664,7 @@ class BoomBeach:
         for tf in self.rqobj["violations"]:
             if self.rqobj["violations"][tf]["time"] is not None:
                 # valid vio
+                
                 viodate = date.fromtimestamp(self.rqobj["violations"][tf]["time"])
                 vio = "{} {} and can not be on the queue until {}".format(tf, self.rqobj["violations"][tf]["reason"], viodate.ctime().split()[1] + " " + viodate.ctime().split()[2])
                 violist.append()
@@ -712,14 +734,16 @@ class BoomBeach:
             
             if len(self.rqobj["queue"]) > 0:
                 now = datetime.utcnow()
+                oneposttime = datetime.utcfromtimestamp(self.rqobj["queue"]["1"]["posttime"])
+                onepingtime = datetime.utcfromtimestamp(self.rqobj["queue"]["1"]["pingtime"])
                 print("queue loop - @ {}, queue length: {}".format(now, len(self.rqobj["queue"])))
                 # make sure there's something in the queue before trying to access stuff
-                if now > self.rqobj["queue"]["1"]["posttime"] + self.queueduration:
+                if now > oneposttime + self.queueduration:
                     # if it's been more than 2 days that the post has been able to be up then delete it, along with the ackpost (ping)
                     if self.rqobj["queue"]["1"]["ackpost"] is not None:
                         await self._delnewmembermsgs(self.rqobj["queue"]["1"]["ackpost"])
                     await self.queue_remove(self.rqobj["queue"]["1"]["TF"])
-                if now < self.rqobj["queue"]["1"]["posttime"] and now > self.rqobj["queue"]["1"]["pingtime"] and self.rqobj["queue"]["1"]["ackpost"] is None:
+                if now < oneposttime and now > onepingtime and self.rqobj["queue"]["1"]["ackpost"] is None:
                     # if it's before the time to post, after the time to ping, and a ping hasn't been sent...
                     pingpeople = self.rqobj["TFs"][self.rqobj["queue"]["1"]["TF"]]
                     if len(pingpeople) > 2:
@@ -732,8 +756,11 @@ class BoomBeach:
                     self.rqobj["queue"]["1"]["ackpost"] = pingmsg.id
                     dataIO.save_json(queue_file, self.rqobj)
                 # check if #1 is past ping time and #2 is within their ping window
+                
                 if len(self.rqobj["queue"]) > 1:
-                    if now < self.rqobj["queue"]["2"]["posttime"] and now > self.rqobj["queue"]["2"]["pingtime"] and self.rqobj["queue"]["2"]["ackpost"] is None:
+                    twoposttime = datetime.utcfromtimestamp(self.rqobj["queue"]["2"]["posttime"])
+                    twopingtime = datetime.utcfromtimestamp(self.rqobj["queue"]["2"]["pingtime"])
+                    if now < twoposttime and now > twopingtime and self.rqobj["queue"]["2"]["ackpost"] is None:
                         pingpeople = self.rqobj["TFs"][self.rqobj["queue"]["2"]["TF"]]
                         if len(pingpeople) > 2:
                             # only get 2 choices from the possible members to ping if there's more than 2
