@@ -694,7 +694,7 @@ class BoomBeach:
         #     return ""
         return s
 
-    async def queue_remove(self, tf):
+    async def queue_remove(self, tf, fromloop: bool=False):
         # internal function for the bot to remove a tf from the queue from the queue loop
         # copy the code over from rqueue_remove to here, and just call this from that function. That way the code isn't duped and
         # both rqueue_remove and the loop can use it
@@ -716,7 +716,9 @@ class BoomBeach:
                 count += 1
             del self.rqobj["queue"][str(len(self.rqobj["queue"]))]
             count = removednumber
-            while count <= len(self.rqobj["queue"]):
+            while count <= len(self.rqobj["queue"]) and fromloop is False:
+                # NEED to add code to check for if it's the first entry being deleted, and that it's past their post window
+                # IF it is then the times don't need to be modified.
                 curposttime = datetime.fromtimestamp(self.rqobj["queue"][str(count)]["posttime"])
                 curpingtime = datetime.fromtimestamp(self.rqobj["queue"][str(count)]["pingtime"])
                 curposttime -= self.queueduration
@@ -724,6 +726,9 @@ class BoomBeach:
                 self.rqobj["queue"][str(count)]["posttime"] = curposttime.timestamp()
                 self.rqobj["queue"][str(count)]["pingtime"] = curpingtime.timestamp()
                 count += 1
+            if fromloop is True:
+                self.rqobj["settings"]["queuebegin"] = rqobj["queue"]["1"]["posttime"]
+
             dataIO.save_json(queue_file, self.rqobj)
             await self._queue_post()  # update the queue on discord
             return True
@@ -755,7 +760,6 @@ class BoomBeach:
             #   "pingtime" : 1501272000 ### July 28, 2017, 8:00 pm # Eastern time will be 4 pm
             # }
 
-            # TODO: fix issue with ping code running 4 hours late. Timestamp issue? conversion issue?
             if len(self.rqobj["queue"]) > 0:
                 now = datetime.utcnow()
                 oneposttime = datetime.fromtimestamp(self.rqobj["queue"]["1"]["posttime"])
@@ -776,7 +780,7 @@ class BoomBeach:
                         #msgdel.append(ackmsg)
                         if ackmsg is not None:
                             await self.bot.delete_message(ackmsg)
-                    if await self.queue_remove(self.rqobj["queue"]["1"]["TF"]) == True:
+                    if await self.queue_remove(self.rqobj["queue"]["1"]["TF"], True) == True:
                         print("Deleted the first entry from the queue")
                     else:
                         print("Something went wrong - that TF isn't in the queue.")
