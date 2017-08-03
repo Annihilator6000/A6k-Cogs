@@ -320,50 +320,13 @@ class BoomBeach:
         #     "posttime" : timestamp of 00:00 of the day allowed to post - earliest posting time
         #     "pingtime" : timestamp that's posttime - 4 hours for the purpose of pinging members of the TF of the upcoming recruitment post
 
-        removednumber = None
-        savedtimestamp = None  # don't know if I'll need this yet
-        for key in self.rqobj["queue"]:
-            if tf.lower() == self.rqobj["queue"][key]["TF"].lower():
-                removednumber = self.rqobj["queue"][key]["position"]
-                savedtimestamp = self.rqobj["queue"][key]["added"]
-                break
-        if removednumber is None:
+        check_remove = await queue_remove(tf)
+        if check_remove == False:
             removemsg = await self.bot.say("The specified TF wasn't found in the queue, or there might have been an error.")
             await asyncio.sleep(30)
             msgdel.append(removemsg)
             await self._delnewmembermsgs(msgdel)
         else:
-            count = removednumber
-            while count < len(self.rqobj["queue"]):
-                # curposttime = None
-                # curpingtime = None
-                # curposttime = datetime.utcfromtimestamp(self.rqobj["queue"][str(count)]["posttime"])
-                # curpingtime = datetime.utcfromtimestamp(self.rqobj["queue"][str(count)]["pingtime"])
-                # curposttime = self.rqobj["queue"][str(count)]["posttime"]
-                # curpingtime = self.rqobj["queue"][str(count)]["pingtime"]
-                # self.rqobj["queue"][str(count+1)]["posttime"] = self.rqobj["queue"][str(count)]["posttime"]
-                # self.rqobj["queue"][str(count+1)]["pingtime"] = self.rqobj["queue"][str(count)]["pingtime"]
-                self.rqobj["queue"][str(count)] = self.rqobj["queue"][str(count+1)]
-                # print("{}".format(self.rqobj["queue"][str(count)]))
-                self.rqobj["queue"][str(count)]["position"] = count
-                # preserve original post time of previos TF
-                # self.rqobj["queue"][str(count)]["posttime"] = curposttime.timestamp()
-                # self.rqobj["queue"][str(count)]["pingtime"] = curpingtime.timestamp()
-                # self.rqobj["queue"][str(count)]["posttime"] = curposttime
-                # self.rqobj["queue"][str(count)]["pingtime"] = curpingtime
-                count += 1
-            del self.rqobj["queue"][str(len(self.rqobj["queue"]))]
-            count = removednumber
-            while count <= len(self.rqobj["queue"]):
-                curposttime = datetime.fromtimestamp(self.rqobj["queue"][str(count)]["posttime"])
-                curpingtime = datetime.fromtimestamp(self.rqobj["queue"][str(count)]["pingtime"])
-                curposttime -= self.queueduration
-                curpingtime -= self.queueduration
-                self.rqobj["queue"][str(count)]["posttime"] = curposttime.timestamp()
-                self.rqobj["queue"][str(count)]["pingtime"] = curpingtime.timestamp()
-                count += 1
-            dataIO.save_json(queue_file, self.rqobj)
-            await self._queue_post()  # update the queue on discord
             removemsg = await self.bot.say("{} has been removed from the queue. Have a nice day.".format(tf))
             await asyncio.sleep(30)
             msgdel.append(removemsg)
@@ -737,29 +700,33 @@ class BoomBeach:
         # both rqueue_remove and the loop can use it
         removednumber = None
         savedtimestamp = None  # don't know if I'll need this yet
-        tflist = ", ".join(self.rqobj["TFs"].keys())
         for key in self.rqobj["queue"]:
-            if tf.lower() == tflist.lower():
-                # match
+            if tf.lower() == self.rqobj["queue"][key]["TF"].lower():
                 removednumber = self.rqobj["queue"][key]["position"]
                 savedtimestamp = self.rqobj["queue"][key]["added"]
                 break
         if removednumber is None:
-            print("boombeach.py: There was an internal failure while attempting to remove {} from the queue".format(tf))
+            return False
         else:
-            # then "move" the other entries "up" the list
             count = removednumber
-            while count < len(self.rqobj["queue"]) and count > 1:
-                curposttime = self.rqobj["queue"][str(count)]["posttime"]
-                curpingtime = self.rqobj["queue"][str(count)]["pingtime"]
+            while count < len(self.rqobj["queue"]):
                 self.rqobj["queue"][str(count)] = self.rqobj["queue"][str(count+1)]
-                self.rqobj["queue"][str(count)]["posttime"] = curposttime
-                self.rqobj["queue"][str(count)]["pingtime"] = curpingtime
+                # print("{}".format(self.rqobj["queue"][str(count)]))
                 self.rqobj["queue"][str(count)]["position"] = count
                 count += 1
             del self.rqobj["queue"][str(len(self.rqobj["queue"]))]
+            count = removednumber
+            while count <= len(self.rqobj["queue"]):
+                curposttime = datetime.fromtimestamp(self.rqobj["queue"][str(count)]["posttime"])
+                curpingtime = datetime.fromtimestamp(self.rqobj["queue"][str(count)]["pingtime"])
+                curposttime -= self.queueduration
+                curpingtime -= self.queueduration
+                self.rqobj["queue"][str(count)]["posttime"] = curposttime.timestamp()
+                self.rqobj["queue"][str(count)]["pingtime"] = curpingtime.timestamp()
+                count += 1
             dataIO.save_json(queue_file, self.rqobj)
-            await self._queue_post() # update the queue on discord
+            await self._queue_post()  # update the queue on discord
+            return True
 
     # async def _queue_ping(self):
     #
@@ -800,9 +767,19 @@ class BoomBeach:
                 if now > oneposttime + self.queueduration:
                     # if it's been more than 2 days that the post has been able to be up then delete it, along with the ackpost (ping)
                     if self.rqobj["queue"]["1"]["ackpost"] is not None:
-                        ackmsg = await self.bot.get_message(self.bot.get_channel(self.queuechannel), self.rqobj["queue"]["1"]["ackpost"])
-                        await self._delnewmembermsgs(ackmsg)
-                    await self.queue_remove(self.rqobj["queue"]["1"]["TF"])
+                        ackmsg = None
+                        try:
+                            ackmsg = await self.bot.get_message(self.bot.get_channel(self.queuechannel), self.rqobj["queue"]["1"]["ackpost"])
+                        except:
+                            print("boombeach.py queue_loop message not found")
+                        #msgdel = []
+                        #msgdel.append(ackmsg)
+                        if ackmsg is not None:
+                            await self.bot.delete_message(ackmsg)
+                    if await self.queue_remove(self.rqobj["queue"]["1"]["TF"]) == True:
+                        print("Deleted the first entry from the queue")
+                    else:
+                        print("Something went wrong - that TF isn't in the queue.")
                 if now < oneposttime and now > onepingtime and self.rqobj["queue"]["1"]["ackpost"] is None:
                     # if it's before the time to post, after the time to ping, and a ping hasn't been sent...
                     pingpeople = self.rqobj["TFs"][self.rqobj["queue"]["1"]["TF"]]
