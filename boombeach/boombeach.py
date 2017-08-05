@@ -215,6 +215,15 @@ class BoomBeach:
                             msgdel.append(addmessage)
                             await asyncio.sleep(30)
                             await self._delnewmembermsgs(msgdel)
+                            return
+                violist = ", ".join(self.rqobj["violations"].keys())
+                if tf.lower() in violist.lower():
+                    if datetime.utcnow().timestamp() < self.rqobj["violations"][tf.title()]["time"]:
+                        addmessage = await self.bot.say("{} is unable to be added to the queue due to a current violation.".format(tf))
+                        msgdel.append(addmessage)
+                        await asyncio.sleep(30)
+                        await self._delnewmembermsgs(msgdel)
+                        return
                 admin = False
                 adminroles = ["Moderators", "Global Operators"]
                 userroles = ", ".join(r.name for r in ctx.message.author.roles)
@@ -470,7 +479,7 @@ class BoomBeach:
         return
     '''
     @rqueue.command(no_pm=True, pass_context=True, name="violation")
-    async def queue_violation(self, ctx, *, tf, reason):
+    async def queue_violation(self, ctx, tf, *, reason: str):
         """Adds a queue violation. If the TF has a space in the name it must be enclosed in quotes."""
         if self.bbserver != ctx.message.server.id:
             return
@@ -532,21 +541,24 @@ class BoomBeach:
                 timeout += timedelta(days=90)
             if self.rqobj["violations"][tf]["count"] == 3:
                 # indefinate
-                timeout = datetime.max()
+                timeout += timedelta(days=36500)
                 self.rqobj["violations"][tf]["indefinate"] = True
             self.rqobj["violations"][tf]["time"] = timeout.timestamp()
             self.rqobj["violations"][tf]["reason"] = reason
         else:
             # TF not in the vio list, add them as a first vio
+            self.rqobj["violations"][tf] = {}
             self.rqobj["violations"][tf]["count"] = 1
             ts = datetime.utcnow() + timedelta(days=30)
             self.rqobj["violations"][tf]["time"] = ts.timestamp()
             self.rqobj["violations"][tf]["indefinate"] = False
             self.rqobj["violations"][tf]["reason"] = reason
 
+        dataIO.save_json(queue_file, self.rqobj)
+        await self._queue_post()
         violationtext = { 1: "for 30 days", 2: "for 90 days", 3: "indefinately"}
-        viomessage = self.bot.say("{}'s violation has been added with reason \"{}\" and will not be able to request {}.".format(tf, reason, violationtext[self.rqobj["violations"][tf]["count"]]))
-        asyncio.sleep(30)
+        viomessage = await self.bot.say("{}'s violation has been added with reason \"{}\" and will not be able to request {}.".format(tf, reason, violationtext[self.rqobj["violations"][tf]["count"]]))
+        await asyncio.sleep(30)
         msgdel.append(viomessage)
         await self._delnewmembermsgs(msgdel)
 
@@ -723,14 +735,14 @@ class BoomBeach:
             if self.rqobj["violations"][tf]["time"] is not None:
                 # valid vio
 
-                viodate = date.fromtimestamp(self.rqobj["violations"][tf]["time"])
-                vio = "{} {} and can not be on the queue until {}".format(tf, self.rqobj["violations"][tf]["reason"], viodate.ctime().split()[1] + " " + viodate.ctime().split()[2])
-                violist.append()
+                viodate = datetime.fromtimestamp(self.rqobj["violations"][tf]["time"])
+                vio = "{} can not be on the queue until {}. Reason: {}".format(tf, viodate.ctime().split()[1] + " " + viodate.ctime().split()[2] + " " + viodate.ctime().split()[4],  self.rqobj["violations"][tf]["reason"])
+                violist.append(vio)
         s = ""
         if len(violist) > 0:
             # return "\n" + "\n".join(violist) + "\n"
             # return "\n{}\n".format("\"n\"".join(violist))
-            s = "\n{}\n".format("\"n\"".join(violist))
+            s = "\n__Violations__\n{}\n".format("\"n\"".join(violist))
         # else:
         #     return ""
         return s
