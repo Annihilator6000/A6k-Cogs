@@ -26,8 +26,10 @@ class BoomBeach:
         self.queueping = "340269179737210890"  # recruitmentqueue channel to ping in
         self.bbserver = "181243681951449088"
         self.queuechannel = "340269179737210890"  # rq-testing channel temporarily
+        self.opchannel = "340269179737210890" # 184858803412533249 <- real OP channel, change after testing is complete
         self.rqobj = dataIO.load_json(queue_file)
         self.testingmode = False
+        self.testingcount = 0
 
     @commands.command(pass_context=True, no_pm=True)
     async def planty(self, ctx):
@@ -162,7 +164,7 @@ class BoomBeach:
             # queue needs subcommands: add, remove, reset (maybe?), and it also needs a loop to handle pinging people to post/queue cleanup
             # maybe after people get pinged for their post have an acknowledgement answer for them to use. If they ack, then remove their ping/comments after post time
 
-            queuemessage = "The following `{0}rqueue` subcommands are available:\n\n```\nadd       - adds the specified TF to the queue\nremove    - removes the specified TF from the queue\nlisttfs   - lists valid TFs\nviolation - adds a violation to the specified TF\npost      - posts the current queue\nrules     - posts the recruitment queue rules\n```\n\nThis message and your `{0}rqueue` message will be deleted after 60 seconds.".format(ctx.prefix)
+            queuemessage = "The following `{0}rqueue` subcommands are available:\n\n```\nadd       - adds the specified TF to the queue\nmove      - moves the specified TF down or up the queue\nremove    - removes the specified TF from the queue\nlisttfs   - lists valid TFs\nviolation - adds a violation to the specified TF\npost      - posts the current queue\nrules     - posts the recruitment queue rules\n```\n\nThis message and your `{0}rqueue` message will be deleted after 60 seconds.".format(ctx.prefix)
             # chan = '260933604706615296' #bot-testing channel
             # chan = '232939832849072130' #recruitmentqueue channel
             # sentmessage = await self.bot.send_message(chan, queuemessage)
@@ -206,6 +208,7 @@ class BoomBeach:
             await asyncio.sleep(30)
             await self._delnewmembermsgs(msgdel)
         else:
+            tf = tf.title()
             if tf.lower() in tflist.lower():
                 # check to see if the tf is already on the queue
                 if len(self.rqobj["queue"]) > 0:
@@ -277,7 +280,7 @@ class BoomBeach:
                     # self.rqobj["queue"].append(tempqobj)
                     dataIO.save_json(queue_file, self.rqobj)
                     await self._queue_post()
-                    addedmsg = await self.bot.say("{} has been added to the queue.".format(tf))
+                    addedmsg = await self.bot.say("{} has been added to the queue. \U0001f389".format(tf))
                     msgdel.append(addedmsg)
                     await asyncio.sleep(30)
                     await self._delnewmembermsgs(msgdel)
@@ -293,7 +296,7 @@ class BoomBeach:
                 await self._delnewmembermsgs(msgdel)
 
     @rqueue.command(no_pm=True, pass_context=True, name="remove")
-    async def rqueue_remove(self, ctx, tf):
+    async def rqueue_remove(self, ctx, *, tf):
         """Removes a TF from their slot in the recruitment queue."""
         if self.bbserver != ctx.message.server.id:
             return
@@ -301,6 +304,7 @@ class BoomBeach:
             return
         msgdel = []
         msgdel.append(ctx.message)
+        tf = tf.title()
         admin = False
         adminroles = ["Moderators", "Global Operators"]
         userroles = ", ".join(r.name for r in ctx.message.author.roles)
@@ -361,13 +365,15 @@ class BoomBeach:
     async def queue_move(self, ctx, tf, direction):
         """Moves a TF up or down the queue one position at a time.
 
-        Syntax: queue move TF down/up"""
+        Syntax: queue move TF down/up
+        If there are spaces in the TF name it must be enclosed in quotes."""
         if self.bbserver != ctx.message.server.id:
             return
         if self.queuechannel != ctx.message.channel.id:  # recruitmentqueue channel
             return
         msgdel = []
         msgdel.append(ctx.message)
+        tf = tf.title()
         if direction is None or direction is "":
             notifymsg = await self.bot.say("You must specify a direction. If you're not a GO you can only move *your* TF `down` the queue. Valid direction values: `up` or `down`.")
             await asyncio.sleep(30)
@@ -434,22 +440,28 @@ class BoomBeach:
             await self._delnewmembermsgs(msgdel)
             return
         # check if it's the first or last element and being moved the wrong way - dict error will ensue
-        if (currentposition == 0 and direction == "up") or (currentposition == len(self.rqobj["queue"]) and direction == "down"):
+        if (currentposition == 1 and direction == "up") or (currentposition == len(self.rqobj["queue"]) and direction == "down"):
             notifymsg = await self.bot.say("I can't move {} {}, because they are currently at the {} of the queue.".format(tf, direction, "begining" if direction == "up" else "end"))
             await asyncio.sleep(30)
             msgdel.append(notifymsg)
             await self._delnewmembermsgs(msgdel)
             return
 
-        # add a check to see if the TF being moved is in position 1, and is within the ping window
-        # pingtime - 1 hour (so 5 hours before post)
-        # If it is allow only GO swap
-
         newpos = None
         if direction == "up":
             newpos = currentposition - 1
         else:
             newpos = currentposition + 1
+
+        # check if #1 is moving down and is within 5 hours of posting
+        # if they are then a GO needs to check and move them
+        if currentposition == 1 and direction == "down" and admin is False and datetime.utcnow().timestamp() > (self.rqobj["queue"]["1"]["posttime"] - timedelta(hours=5).total_seconds()):
+            notifymsg = await self.bot.say("{} is within 5 hours of posting. Because of this a GO needs to check that {} has enough time to get a post together. A notification is being sent to the GOs.".format(self.rqobj["queue"]["1"]["TF"], self.rqobj["queue"]["2"]["TF"]))
+            await self.bot.send_message(bot.get_channel(self.opchannel), "{0} would like to move {1} down the queue in #recruitmentqueue. A GO needs to check that {2} has enough time to get a post together, and move {1}.".format(ctx.message.author.nick, self.rqobj["queue"]["1"]["TF"], self.rqobj["queue"]["2"]["TF"]))
+            await asyncio.sleep(30)
+            msgdel.append(notifymsg)
+            await self._delnewmembermsgs(msgdel)
+            return
 
         newposdata = self.rqobj["queue"][str(newpos)]
         newposposttime = self.rqobj["queue"][str(newpos)]["posttime"]
@@ -505,6 +517,7 @@ class BoomBeach:
         #    "reason" : null
         # }
 
+        tf = tf.title()
         admin = False
         adminroles = ["Moderators", "Global Operators"]
         userroles = ", ".join(r.name for r in ctx.message.author.roles)
@@ -520,7 +533,7 @@ class BoomBeach:
         tflist = ", ".join(self.rqobj["TFs"].keys())
         if tf.lower() not in tflist.lower():
             # might be able to use proper case, or whatever it's called
-            notifymsg = await self.bot.say("That is not a valid TF. Please select one from `{}queue listtfs` and try again. If you require assistance please contact Annihilator6000 (`@Annihilator6000`).".format(ctx.prefix))
+            notifymsg = await self.bot.say("That is not a valid TF. Please select one from `{}queue listtfs` and try again. If you require assistance please contact Annihilator6000 (`@Annihilator6000#2526`).".format(ctx.prefix))
             asyncio.sleep(30)
             msgdel.append(notifymsg)
             await self._delnewmembermsgs(msgdel)
@@ -565,6 +578,7 @@ class BoomBeach:
         await self._delnewmembermsgs(msgdel)
 
     @rqueue.command(no_pm=True, pass_context=True, name="post")
+    @checks.mod()
     async def queue_post(self, ctx):
         """Posts or updates the current queue. Handy for if it accidentally gets deleted."""
         if self.bbserver != ctx.message.server.id:
@@ -575,6 +589,7 @@ class BoomBeach:
         await self.bot.delete_message(ctx.message)
 
     @rqueue.command(no_pm=True, pass_context=True, name="timestamps")
+    @checks.is_owner()
     async def queue_times(self, ctx):
         """Displays queue times for debugging."""
         timedata = []
@@ -590,6 +605,7 @@ class BoomBeach:
         await self.bot.say("```\n{}\n```".format("\n".join(timedata)))
 
     @rqueue.command(no_pm=True, pass_context=True, name="checkts")
+    @checks.is_owner()
     async def queue_checkts(self, ctx):
         utcnow = datetime.utcnow()
         utcnowts = utcnow.timestamp()
@@ -601,13 +617,18 @@ class BoomBeach:
         await self.bot.say("```\n{:<26} - {:<26}\n{} - {}\n{:<26} - {:<26}\n```".format("utcnow()", "fromtimestamp()", utcnow, fromts, utcnowts, fromtsts))
 
     @rqueue.command(no_pm=True, pass_context=True, name="cleardata")
+    @checks.is_owner()
     async def rqueue_clear(self, ctx):
         self.rqobj["queue"] = {}
+        self.rqobj["settings"]["queuebegin"] = None
         self.rqobj["settings"]["queuepost"] = None
+        self.rqobj["settings"]["rulespost"] = None
+        self.rqobj["violations"] = {"Whisky": {"count": 1, "indefinite": False, "reason": None, "time": None}}
         dataIO.save_json(queue_file, self.rqobj)
         await self.bot.say("Queue data cleared.")
 
     @rqueue.command(no_pm=True, pass_context=True, name="settonow")
+    @checks.is_owner()
     async def rqueue_settonow(self, ctx):
         """Sets the first entry's timestamp to now. For testing purposes."""
         # oneday = timedelta(days=1)
@@ -625,6 +646,7 @@ class BoomBeach:
         await self._queue_post()
 
     @rqueue.command(no_pm=True, pass_context=True, name="rules")
+    @checks.mod()
     async def queue_rules(self, ctx):
         """Posts the recruitment queue rules. Handy for if it accidentally gets deleted."""
         if self.bbserver != ctx.message.server.id:
@@ -667,7 +689,8 @@ class BoomBeach:
                         return
             except:
                 pass
-        rules = "If you want to recruit in redditbb, please post here.\n\n***RULES***\n```md\n1. Post on time\n2. If your TF is full, take yourself off the queue.\n3. Include The Recruitment Form Link:\n```\n<https://docs.google.com/forms/d/e/1FAIpQLScVYQtm-sINS6TnBewiGS0ac9jOL0e2cZT3TFtJKd71aXC1aw/viewform?c=0&w=1>\n\n***VIOLATIONS***\n```\nIf you violate the rules:\nyour TF cannot be in the queue for 1 month (1st time),\n3 months (2nd time),\nindefinite suspension/deverification vote (3rd time)\n```"
+        rules = "If you want to recruit in the /r/BoomBeach subreddit, please post here.\n\n***RULES***\n```md\n1. Post on time\n2. If your TF is full, take yourself off the queue.\n3. Include The Recruitment Form Link:\n```\n<https://docs.google.com/forms/d/e/1FAIpQLScVYQtm-sINS6TnBewiGS0ac9jOL0e2cZT3TFtJKd71aXC1aw/viewform?c=0&w=1>\n\n"
+        rules += "***VIOLATIONS***\n```\nIf you violate the rules:\n1st offense - your TF cannot be in the queue for 1 month\n2nd offense - 3 months\n3rd offense - indefinite suspension/deverification vote\n```\n\n***COMMANDS***\n```\nadd, move, remove, listtfs, violation, post, rules\n```\nThese are subcommands and need to be proceeded by `..rqueue`. Some queue commands may be GO only commands."
         rulespost = await self.bot.send_message(self.bot.get_channel(self.queuechannel), rules)
         self.rqobj["settings"]["rulespost"] = str(rulespost.id)
         # await self.bot.delete_message(ctx.message)
@@ -703,21 +726,30 @@ class BoomBeach:
         queuevio = ""
         if len(self.rqobj["violations"]) > 0:
             queuevio = self.queue_violatation()  # get vio data from data file and add it here
-        # else:
-        #     queuevio = ""
-        # queuepost = "__Recruitment Queue__\nFirst date is the changeover, when the TF's post can be swapped in. Earliest posting time is 00:00 UTC on that date. <https://time.is/UTC>\n" + queuevio + "\n```md\nCurrent Queue\n=============\n\n" + queuedata + "\n```"
-        # queuepost = "__Recruitment Queue__\nFirst date is the changeover, when the TF's post can be swapped in. Earliest posting time is 00:00 UTC on that date. <https://time.is/UTC>\n{}\n```md\nCurrent Queue\n=============\n\n{}\n```".format(queuevio, queuedata)
         queuepost = "__Recruitment Queue__\nFirst date is the changeover, when the TF's post can be swapped in. Earliest posting time is 00:00 UTC on that date. <https://time.is/UTC>\n"
         queuepost += "{}".format(queuevio)
         queuepost += "\n```md\nCurrent Queue\n=============\n\n"
         queuepost += queuedata
         queuepost += "\n```"
-        # chan = '260933604706615296' #bot-testing channel
-        # chan = '232939832849072130' #recruitmentqueue channel
+
+        if self.rqobj["settings"]["testingmode"] == True:
+            if len(self.rqobj["queue"]) > 0:
+                queuepost += "\nTesting mode active. Post time of 1st TF: {}".format(datetime.fromtimestamp(self.rqobj["queue"]["1"]["posttime"]))
+            else:
+                queuepost +="\n Testing mode active. Post time of 1st TF: ---"
+
         if self.rqobj["settings"]["queuepost"] is not None:
             # have the bot edit the post instead of post a new one
-            currentmsg = await self.bot.get_message(self.bot.get_channel(self.queuechannel), self.rqobj["settings"]["queuepost"])
-            await self.bot.edit_message(currentmsg, queuepost)
+            currentmsg = None
+            try:
+                currentmsg = await self.bot.get_message(self.bot.get_channel(self.queuechannel), self.rqobj["settings"]["queuepost"])
+                await self.bot.edit_message(currentmsg, queuepost)
+            except:
+                pass
+            if currentmsg is None:
+                # the message got deleted by someone - so it needs to be posted new
+                newqueue = await self.bot.send_message(self.bot.get_channel(self.queuechannel), queuepost)
+                self.rqobj["settings"]["queuepost"] = str(newqueue.id)
         else:
             # if there isn't a post (deleted, first run, etc) then make a new one
             newqueue = await self.bot.send_message(self.bot.get_channel(self.queuechannel), queuepost)
@@ -742,17 +774,12 @@ class BoomBeach:
                 violist.append(vio)
         s = ""
         if len(violist) > 0:
-            # return "\n" + "\n".join(violist) + "\n"
-            # return "\n{}\n".format("\"n\"".join(violist))
             s = "\n__Violations__\n{}\n".format("\"n\"".join(violist))
-        # else:
-        #     return ""
+
         return s
 
     async def queue_remove(self, tf, fromloop: bool=False):
         # internal function for the bot to remove a tf from the queue from the queue loop
-        # copy the code over from rqueue_remove to here, and just call this from that function. That way the code isn't duped and
-        # both rqueue_remove and the loop can use it
         removednumber = None
         savedtimestamp = None  # don't know if I'll need this yet
         for key in self.rqobj["queue"]:
@@ -792,10 +819,12 @@ class BoomBeach:
     #
 
     @rqueue.command(no_pm=True, pass_context=True, name="testingmode")
+    @checks.is_owner()
     async def rqueue_tm(self, ctx):
         """Turns testing mode on or off"""
         self.testingmode = not self.testingmode
-        await self.bot.say("Testing mode set to {}".format(self.testingmode))
+        self.testingcount = 0
+        await self.bot.say("Queue testing mode is now {}".format("on" if self.testingmode == True else "off"))
 
     def check_violations(self):
         vio = False
@@ -840,17 +869,12 @@ class BoomBeach:
                             self.rqobj["violations"][tfname]["time"] = None
                             dataIO.save_json(queue_file, self.rqobj)
                             await self._queue_post()
-                        # check if self.rqobj["settings"]["violations"] can be set to false
                         self.check_violations()
 
             if len(self.rqobj["queue"]) > 0:
                 now = datetime.utcnow()
                 oneposttime = datetime.fromtimestamp(self.rqobj["queue"]["1"]["posttime"])
                 onepingtime = datetime.fromtimestamp(self.rqobj["queue"]["1"]["pingtime"])
-                # print("queue loop - @ {}, queue length: {}".format(now, len(self.rqobj["queue"])))
-                # print("oneposttime: {}\nonepingtime: {}".format(oneposttime, onepingtime))
-                # make sure there's something in the queue before trying to access stuff
-                #print("Now: {}\noneposttime + self.queueduration: {}".format(now.timestamp(), (oneposttime + self.queueduration).timestamp()))
                 if now > oneposttime + self.queueduration:
                     # if it's been more than 2 days that the post has been able to be up then delete it, along with the ackpost (ping)
                     if self.rqobj["queue"]["1"]["ackpost"] is not None:
@@ -858,9 +882,7 @@ class BoomBeach:
                         try:
                             ackmsg = await self.bot.get_message(self.bot.get_channel(self.queuechannel), self.rqobj["queue"]["1"]["ackpost"])
                         except:
-                            print("boombeach.py queue_loop message not found")
-                        #msgdel = []
-                        #msgdel.append(ackmsg)
+                            print("boombeach.py queue_loop ackpost message not found for {}".format(self.rqobj["queue"]["1"]["TF"]))
                         if ackmsg is not None:
                             await self.bot.delete_message(ackmsg)
                     if await self.queue_remove(self.rqobj["queue"]["1"]["TF"], True) == True:
@@ -903,9 +925,14 @@ class BoomBeach:
                 while count <= len(self.rqobj["queue"]):
                     self.rqobj["queue"][str(count)]["posttime"] -= goback.total_seconds()
                     self.rqobj["queue"][str(count)]["pingtime"] -= goback.total_seconds()
+                    if count == 1:
+                        print("boombeach.py queue_loop: First entry posttime timestamp: {}".format(self.rqobj["queue"]["1"]["posttime"]))
                     count += 1
                 dataIO.save_json(queue_file, self.rqobj)
-                await self._queue_post()
+                self.testingcount += 1
+                if self.testingcount == 3:
+                    await self._queue_post()
+                    self.testingcount = 0
                 await asyncio.sleep(10)
             else:
                 await asyncio.sleep(60)  # was 300
