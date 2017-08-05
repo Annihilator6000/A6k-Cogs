@@ -27,7 +27,7 @@ class BoomBeach:
         self.bbserver = "181243681951449088"
         self.queuechannel = "340269179737210890"  # rq-testing channel temporarily
         self.rqobj = dataIO.load_json(queue_file)
-        # self.msgdel = []
+        self.testingmode = False
 
     @commands.command(pass_context=True, no_pm=True)
     async def planty(self, ctx):
@@ -349,15 +349,34 @@ class BoomBeach:
         await self._delnewmembermsgs(msgdel)
 
     @rqueue.command(no_pm=True, pass_context=True, name="move")
-    async def queue_move(self, ctx, *, direction: str=None, tf):
-        """Moves a TF up or down the queue one position at a time. Syntax: queue move down/up TF"""
+    async def queue_move(self, ctx, tf, direction):
+        """Moves a TF up or down the queue one position at a time.
+
+        Syntax: queue move TF down/up"""
         if self.bbserver != ctx.message.server.id:
             return
         if self.queuechannel != ctx.message.channel.id:  # recruitmentqueue channel
             return
         msgdel = []
         msgdel.append(ctx.message)
+        if direction is None or direction is "":
+            notifymsg = await self.bot.say("You must specify a direction. If you're not a GO you can only move *your* TF `down` the queue. Valid direction values: `up` or `down`.")
+            await asyncio.sleep(30)
+            msgdel.append(notifymsg)
+            await self._delnewmembermsgs(msgdel)
+            return
         direction = direction.lower()
+        directioncheck = ["up", "u", "down", "d"]
+        if direction not in directioncheck:
+            notifymsg = await self.bot.say("That is not a valid direction. Valid direction values are: `down` and `up`. Only GOs can use `up`.")
+            await asyncio.sleep(30)
+            msgdel.append(notifymsg)
+            await self._delnewmembermsgs(msgdel)
+            return
+        if direction == "u":
+            direction = "up"
+        if direction == "d":
+            direction = "down"
         admin = False
         adminroles = ["Moderators", "Global Operators"]
         userroles = ", ".join(r.name for r in ctx.message.author.roles)
@@ -368,45 +387,47 @@ class BoomBeach:
         tflist = ", ".join(self.rqobj["TFs"].keys())
         if tf.lower() not in tflist.lower():
             notifymsg = await self.bot.say("That is not a valid TF. Please select one from `{}queue listtfs` and try again. If you require assistance please contact a GO.".format(ctx.prefix))
-            asyncio.sleep(30)
+            await asyncio.sleep(30)
             msgdel.append(notifymsg)
             await self._delnewmembermsgs(msgdel)
             return
         if admin is False and tf not in userroles:
             notifymsg = await self.bot.say("You don't have a role for {}. You are only able to move your own TF. If you require assistance please contact a GO.".format(tf))
-            asyncio.sleep(30)
+            await asyncio.sleep(30)
             msgdel.append(notifymsg)
             await self._delnewmembermsgs(msgdel)
             return
         if admin is False and direction.lower() == "up":
             notifymsg = await self.bot.say("You are not allowed to move your TF up the queue. You may only move it down. If you require assistance please contact a GO.")
-            asyncio.sleep(30)
+            await asyncio.sleep(30)
             msgdel.append(notifymsg)
             await self._delnewmembermsgs(msgdel)
             return
         if direction.lower() not in ["up", "down"]:
             notifymsg = await self.bot.say("`direction` can only be `up` or `down`. Only GOs can use `up`. Please try again.".format(tf))
-            asyncio.sleep(30)
+            await asyncio.sleep(30)
             msgdel.append(notifymsg)
             await self._delnewmembermsgs(msgdel)
             return
         # find the TF
         currentposition = None
-        for key in self.rqobj["queue"]:
-            if tf.lower() == tflist.lower():
-                currentposition = self.rqobj["queue"][key]["position"]
-                break
+        count = 1
+        while count <= len(self.rqobj["queue"]):
+            if tf.lower() == self.rqobj["queue"][str(count)]["TF"].lower():
+                currentposition = self.rqobj["queue"][str(count)]["position"]
+                # break
+            count += 1
         # check if currentposition is still None. If so, then a match was not found in the queue. Warn user.
         if currentposition is None:
-            notifymsg = await self.bot.say("{} not found in the queue. If this is an error please contact Annihilator6000 (`@Annihilator6000#2526`)".format(tf))
-            asyncio.sleep(30)
+            notifymsg = await self.bot.say("{} not found in the queue. If this is an error please contact Annihilator6000 (`@Annihilator6000#2526`).".format(tf))
+            await asyncio.sleep(30)
             msgdel.append(notifymsg)
             await self._delnewmembermsgs(msgdel)
             return
         # check if it's the first or last element and being moved the wrong way - dict error will ensue
         if (currentposition == 0 and direction == "up") or (currentposition == len(self.rqobj["queue"]) and direction == "down"):
             notifymsg = await self.bot.say("I can't move {} {}, because they are currently at the {} of the queue.".format(tf, direction, "begining" if direction == "up" else "end"))
-            asyncio.sleep(30)
+            await asyncio.sleep(30)
             msgdel.append(notifymsg)
             await self._delnewmembermsgs(msgdel)
             return
@@ -425,17 +446,21 @@ class BoomBeach:
         self.rqobj["queue"][str(newpos)] = self.rqobj["queue"][str(currentposition)] # 3 to 2
         self.rqobj["queue"][str(newpos)]["position"] = newpos
         # newposition needs currentposition's post/ping times
+        self.rqobj["queue"][str(newpos)]["posttime"] = 0
+        self.rqobj["queue"][str(newpos)]["pingtime"] = 0
         self.rqobj["queue"][str(newpos)]["posttime"] = curpostposttime
         self.rqobj["queue"][str(newpos)]["pingtime"] = curpostpingtime
         self.rqobj["queue"][str(currentposition)] = tempdata  # temp to 3
         self.rqobj["queue"][str(currentposition)]["position"] = currentposition
         # currentposition needs newposition's post/ping times
+        self.rqobj["queue"][str(currentposition)]["posttime"] = 0
+        self.rqobj["queue"][str(currentposition)]["pingtime"] = 0
         self.rqobj["queue"][str(currentposition)]["posttime"] = newposposttime
         self.rqobj["queue"][str(currentposition)]["pingtime"] = newpospingtime
         dataIO.save_json(queue_file, self.rqobj)
         await self._queue_post()  # update Discord post
         notifymessage = await self.bot.say("{} has been successfully moved 1 position {} the queue.".format(tf, direction))
-        asyncio.sleep(30)
+        await asyncio.sleep(30)
         msgdel.append(notifymessage)
         await self._delnewmembermsgs(msgdel)
     '''
@@ -568,6 +593,23 @@ class BoomBeach:
         self.rqobj["settings"]["queuepost"] = None
         dataIO.save_json(queue_file, self.rqobj)
         await self.bot.say("Queue data cleared.")
+
+    @rqueue.command(no_pm=True, pass_context=True, name="settonow")
+    async def rqueue_settonow(self, ctx):
+        """Sets the first entry's timestamp to now. For testing purposes."""
+        # oneday = timedelta(days=1)
+        ping = datetime.utcnow()
+        post = ping + timedelta(hours=4)
+        count = 1
+        while count <= len(self.rqobj["queue"]):
+            if count != 1:
+                ping += timedelta(days=2)
+                post += timedelta(days=2)
+            self.rqobj["queue"][str(count)]["posttime"] = post.timestamp()
+            self.rqobj["queue"][str(count)]["pingtime"] = ping.timestamp()
+            count += 1
+        dataIO.save_json(queue_file, self.rqobj)
+        await self._queue_post()
 
     @rqueue.command(no_pm=True, pass_context=True, name="rules")
     async def queue_rules(self, ctx):
@@ -727,7 +769,7 @@ class BoomBeach:
                 self.rqobj["queue"][str(count)]["pingtime"] = curpingtime.timestamp()
                 count += 1
             if fromloop is True:
-                self.rqobj["settings"]["queuebegin"] = rqobj["queue"]["1"]["posttime"]
+                self.rqobj["settings"]["queuebegin"] = self.rqobj["queue"]["1"]["posttime"]
 
             dataIO.save_json(queue_file, self.rqobj)
             await self._queue_post()  # update the queue on discord
@@ -735,6 +777,12 @@ class BoomBeach:
 
     # async def _queue_ping(self):
     #
+
+    @rqueue.command(no_pm=True, pass_context=True, name="testingmode")
+    async def rqueue_tm(self, ctx):
+        """Turns testing mode on or off"""
+        self.testingmode = not self.testingmode
+        await self.bot.say("Testing mode set to {}".format(self.testingmode))
 
     async def queue_loop(self):
         while self == self.bot.get_cog('BoomBeach'):
@@ -813,7 +861,19 @@ class BoomBeach:
                         pingmsg = await self.bot.send_message(self.bot.get_channel(self.queueping), "{} - **Reminder**, you will be able to put up your recruitment post for {} in just under 4 hours.".format(" ".join(pinglist), self.rqobj["queue"]["2"]["TF"]))
                         self.rqobj["queue"]["2"]["ackpost"] = pingmsg.id
                         dataIO.save_json(queue_file, self.rqobj)
-            await asyncio.sleep(300)
+            # await asyncio.sleep(300)
+            if self.testingmode == True:
+                goback = timedelta(hours=1)
+                count = 1
+                while count <= len(self.rqobj["queue"]):
+                    self.rqobj["queue"][str(count)]["posttime"] -= goback.total_seconds()
+                    self.rqobj["queue"][str(count)]["pingtime"] -= goback.total_seconds()
+                    count += 1
+                dataIO.save_json(queue_file, self.rqobj)
+                await self._queue_post()
+                await asyncio.sleep(10)
+            else:
+                await asyncio.sleep(60)  # was 300
 
     @commands.command(pass_context=True, no_pm=True)
     @commands.has_any_role('Moderators', 'Global Operators', 'TFC Leaders', 'TFC Co-Leaders', 'Affiliate Leaders')
