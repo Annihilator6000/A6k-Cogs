@@ -736,7 +736,7 @@ class BoomBeach:
                 # valid vio
 
                 viodate = datetime.fromtimestamp(self.rqobj["violations"][tf]["time"])
-                vio = "{} can not be on the queue until {}. Reason: {}".format(tf, viodate.ctime().split()[1] + " " + viodate.ctime().split()[2] + " " + viodate.ctime().split()[4],  self.rqobj["violations"][tf]["reason"])
+                vio = "{} can not be on the queue until {}. Reason: {}.".format(tf, viodate.ctime().split()[1] + " " + viodate.ctime().split()[2] + " " + viodate.ctime().split()[4],  self.rqobj["violations"][tf]["reason"])
                 violist.append(vio)
         s = ""
         if len(violist) > 0:
@@ -818,6 +818,18 @@ class BoomBeach:
             #   "posttime" : 1501286400 ### July 29, 2017, 12:00 am # Eastern time will be 8 pm
             #   "pingtime" : 1501272000 ### July 28, 2017, 8:00 pm # Eastern time will be 4 pm
             # }
+
+            if self.rqobj["settings"]["violations"] == True:
+                # test if violations are done
+                for tfname in self.rqobj["violations"].keys():
+                    if self.rqobj["violations"][tfname]["count"] == 3 or self.rqobj["violations"][tfname]["time"] is None:
+                        # skip if it's indefinite or already cleared
+                        continue
+                    else:
+                        if datetime.utcnow().timestamp() > self.rqobj["violations"][tfname]["time"]:
+                            self.rqobj["violations"][tfname]["time"] = None
+                            dataIO.save_json(queue_file, self.rqobj)
+                            await self._queue_post()
 
             if len(self.rqobj["queue"]) > 0:
                 now = datetime.utcnow()
