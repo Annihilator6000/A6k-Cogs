@@ -432,31 +432,29 @@ class BoomBeach:
             await self._delnewmembermsgs(msgdel)
             return
 
+        # add a check to see if the TF being moved is in position 1, and is within the ping window
+        # pingtime - 1 hour (so 5 hours before post)
+        # If it is allow only GO swap
+
         newpos = None
         if direction == "up":
             newpos = currentposition - 1
         else:
             newpos = currentposition + 1
 
-        tempdata = self.rqobj["queue"][str(newpos)]
+        newposdata = self.rqobj["queue"][str(newpos)]
         newposposttime = self.rqobj["queue"][str(newpos)]["posttime"]
         newpospingtime = self.rqobj["queue"][str(newpos)]["pingtime"]
-        curpostposttime = self.rqobj["queue"][str(currentposition)]["posttime"]
-        curpostpingtime = self.rqobj["queue"][str(currentposition)]["pingtime"]
-        self.rqobj["queue"][str(newpos)] = self.rqobj["queue"][str(currentposition)] # 3 to 2
+        curposposttime = self.rqobj["queue"][str(currentposition)]["posttime"]
+        curpospingtime = self.rqobj["queue"][str(currentposition)]["pingtime"]
+        self.rqobj["queue"][str(newpos)] = self.rqobj["queue"][str(currentposition)]
         self.rqobj["queue"][str(newpos)]["position"] = newpos
-        # newposition needs currentposition's post/ping times
-        self.rqobj["queue"][str(newpos)]["posttime"] = 0
-        self.rqobj["queue"][str(newpos)]["pingtime"] = 0
-        self.rqobj["queue"][str(newpos)]["posttime"] = curpostposttime
-        self.rqobj["queue"][str(newpos)]["pingtime"] = curpostpingtime
-        self.rqobj["queue"][str(currentposition)] = tempdata  # temp to 3
+        self.rqobj["queue"][str(newpos)]["posttime"] = newposposttime
+        self.rqobj["queue"][str(newpos)]["pingtime"] = newpospingtime
+        self.rqobj["queue"][str(currentposition)] = newposdata
         self.rqobj["queue"][str(currentposition)]["position"] = currentposition
-        # currentposition needs newposition's post/ping times
-        self.rqobj["queue"][str(currentposition)]["posttime"] = 0
-        self.rqobj["queue"][str(currentposition)]["pingtime"] = 0
-        self.rqobj["queue"][str(currentposition)]["posttime"] = newposposttime
-        self.rqobj["queue"][str(currentposition)]["pingtime"] = newpospingtime
+        self.rqobj["queue"][str(currentposition)]["posttime"] = curposposttime
+        self.rqobj["queue"][str(currentposition)]["pingtime"] = curpospingtime
         dataIO.save_json(queue_file, self.rqobj)
         await self._queue_post()  # update Discord post
         notifymessage = await self.bot.say("{} has been successfully moved 1 position {} the queue.".format(tf, direction))
@@ -513,12 +511,13 @@ class BoomBeach:
         tflist = ", ".join(self.rqobj["TFs"].keys())
         if tf.lower() not in tflist.lower():
             # might be able to use proper case, or whatever it's called
-            notifymsg = await self.bot.say("That is not a valid TF. Please select one from `{}queue listtfs` and try again. If you require assistance please contact a GO.".format(ctx.prefix))
+            notifymsg = await self.bot.say("That is not a valid TF. Please select one from `{}queue listtfs` and try again. If you require assistance please contact Annihilator6000 (`@Annihilator6000`).".format(ctx.prefix))
             asyncio.sleep(30)
             msgdel.append(notifymsg)
             await self._delnewmembermsgs(msgdel)
             return
-        if tf.lower() in tflist.lower():  # probably not going to work.
+        violist = ", ".join(self.rqobj["violations"])
+        if tf.lower() in violist.lower():
             if self.rqobj["violations"][tf]["count"] == 3:
                 # already at the max
                 notifymsg = await self.bot.say("{} already has 3 queue violations, and is indefinately suspended from the queue.".format(tf))
