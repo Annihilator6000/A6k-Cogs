@@ -501,7 +501,7 @@ class BoomBeach:
         # "Whisky" : {
         #    "count" : 1,
         #    "time" : null,
-        #    "indefinate" : false
+        #    "indefinite" : false
         #    "reason" : null
         # }
 
@@ -529,7 +529,7 @@ class BoomBeach:
         if tf.lower() in violist.lower():
             if self.rqobj["violations"][tf]["count"] == 3:
                 # already at the max
-                notifymsg = await self.bot.say("{} already has 3 queue violations, and is indefinately suspended from the queue.".format(tf))
+                notifymsg = await self.bot.say("{} already has 3 queue violations, and is indefinitely suspended from the queue.".format(tf))
                 asyncio.sleep(30)
                 msgdel.append(notifymsg)
                 await self._delnewmembermsgs(msgdel)
@@ -539,10 +539,11 @@ class BoomBeach:
             # timeoutfuture = None
             if self.rqobj["violations"][tf]["count"] == 2:
                 timeout += timedelta(days=90)
+                self.rqobj["settings"]["violations"] = True
             if self.rqobj["violations"][tf]["count"] == 3:
-                # indefinate
+                # indefinite
                 timeout += timedelta(days=36500)
-                self.rqobj["violations"][tf]["indefinate"] = True
+                self.rqobj["violations"][tf]["indefinite"] = True
             self.rqobj["violations"][tf]["time"] = timeout.timestamp()
             self.rqobj["violations"][tf]["reason"] = reason
         else:
@@ -551,12 +552,13 @@ class BoomBeach:
             self.rqobj["violations"][tf]["count"] = 1
             ts = datetime.utcnow() + timedelta(days=30)
             self.rqobj["violations"][tf]["time"] = ts.timestamp()
-            self.rqobj["violations"][tf]["indefinate"] = False
+            self.rqobj["violations"][tf]["indefinite"] = False
             self.rqobj["violations"][tf]["reason"] = reason
+            self.rqobj["settings"]["violations"] = True
 
         dataIO.save_json(queue_file, self.rqobj)
         await self._queue_post()
-        violationtext = { 1: "for 30 days", 2: "for 90 days", 3: "indefinately"}
+        violationtext = { 1: "for 30 days", 2: "for 90 days", 3: "indefinitely"}
         viomessage = await self.bot.say("{}'s violation has been added with reason \"{}\" and will not be able to request {}.".format(tf, reason, violationtext[self.rqobj["violations"][tf]["count"]]))
         await asyncio.sleep(30)
         msgdel.append(viomessage)
@@ -795,6 +797,14 @@ class BoomBeach:
         self.testingmode = not self.testingmode
         await self.bot.say("Testing mode set to {}".format(self.testingmode))
 
+    def check_violations(self):
+        vio = False
+        for tfname in self.rqobj["violations"].keys():
+            if not self.rqobj["violations"][tfname]["indefinite"] and self.rqobj["violations"][tfname]["time"] is not None:
+                vio = True
+        self.rqobj["settings"]["violations"] = vio
+        dataIO.save_json(queue_file, self.rqobj)
+
     async def queue_loop(self):
         while self == self.bot.get_cog('BoomBeach'):
             # example data:
@@ -820,7 +830,7 @@ class BoomBeach:
             # }
 
             if self.rqobj["settings"]["violations"] == True:
-                # test if violations are done
+                # test if violation times are over
                 for tfname in self.rqobj["violations"].keys():
                     if self.rqobj["violations"][tfname]["count"] == 3 or self.rqobj["violations"][tfname]["time"] is None:
                         # skip if it's indefinite or already cleared
@@ -830,6 +840,8 @@ class BoomBeach:
                             self.rqobj["violations"][tfname]["time"] = None
                             dataIO.save_json(queue_file, self.rqobj)
                             await self._queue_post()
+                        # check if self.rqobj["settings"]["violations"] can be set to false
+                        self.check_violations()
 
             if len(self.rqobj["queue"]) > 0:
                 now = datetime.utcnow()
