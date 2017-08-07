@@ -241,8 +241,8 @@ class BoomBeach:
 
                 bcs = self.bcsmokecheck(ctx)
 
-                if admin is True or (tf.lower() in userroles.lower()) or (bcs == True and tf.lower() == "bc/smoke"):
-                    await self.backupqdata(ctx.message.author.nick, ctx.message.content)
+                if admin is True or (tf.lower() in userroles.lower()) or (bcs is True and tf.lower() == "bc/smoke"):
+                    await self.backupqdata(ctx.message.author.nick, ctx.message.content, "queue")
                     position = len(self.rqobj["queue"]) + 1
                     self.rqobj["queue"][str(position)] = {}
                     self.rqobj["queue"][str(position)]["position"] = position
@@ -330,7 +330,7 @@ class BoomBeach:
         for ar in adminroles:
             if ar in userroles:
                 admin = True
-        if admin is False and (tf.lower() not in userroles.lower()) and (bcs == True and tf.lower != "bc/smoke"):
+        if admin is False and (tf.lower() not in userroles.lower()) and (bcs is True and tf.lower() != "bc/smoke"):
             errormsg = await self.bot.say("You're not allowed to remove a TF that you don't have roles for. Please contact a GO if you need assistance with this.")
             await asyncio.sleep(30)
             msgdel.append(errormsg)
@@ -372,12 +372,16 @@ class BoomBeach:
                 break
         return bcsmokecheck
 
-    async def backupqdata(self, author, content):
+    async def backupqdata(self, author, cmdcontent, whattobackup):
         # c is ctx - need ctx.message.author.nick and ctx.message.content from it
         if self.testingmode is True or self.queuechannel != "232939832849072130":
             return
-        backupmsg = "The recruitment queue is being modified by `{}`. Command: `{}`. Current date/time: {}.\nHere's a snapshot of it before the new data gets saved:\n".format(author, content, datetime.utcnow())
-        backupmsg += "Queue:\n```\n{}\n```\nViolations:\n```\n{}\n```".format(self.rqobj["queue"], self.rqobj["violations"])
+        backupmsg = "The recruitment queue is being modified by `{}`.\nCommand: `{}`.\nCurrent date/time: {}.\nHere's a snapshot of it before the new data gets saved:".format(author, cmdcontent, datetime.utcnow())
+        # backupmsg += "Queue:\n```\n{}\n```\nViolations:\n```\n{}\n```".format(self.rqobj["queue"], self.rqobj["violations"])
+        if whattobackup.lower() == "queue" or whattobackup.lower() == "all":
+            backupmsg += "\nQueue:\n```\n{}\n```".format(self.rqobj["queue"])
+        if whattobackup.lower() == "violations" or whattobackup.lower() == "all":
+            backupmsg += "\nViolations:\n```\n{}\n```".format(self.rqobj["violations"])
         await self.bot.send_message(self.bot.get_channel(self.modlogchannel), backupmsg)
 
     @rq.command(no_pm=True, pass_context=True, name="listtfs")
@@ -486,7 +490,7 @@ class BoomBeach:
             await self._delnewmembermsgs(msgdel)
             return
 
-        await self.backupqdata(ctx.message.author.nick, ctx.message.content)
+        await self.backupqdata(ctx.message.author.nick, ctx.message.content, "queue")
 
         newpos = None
         if direction == "up":
@@ -595,7 +599,7 @@ class BoomBeach:
                 msgdel.append(notifymsg)
                 await self._delnewmembermsgs(msgdel)
                 return
-            await self.backupqdata(ctx.message.author.nick, ctx.message.content)
+            await self.backupqdata(ctx.message.author.nick, ctx.message.content, "violations")
             self.rqobj["violations"][tf]["count"] += 1
             timeout = datetime.utcnow()
             # timeoutfuture = None
@@ -610,7 +614,7 @@ class BoomBeach:
             self.rqobj["violations"][tf]["reason"] = reason
         else:
             # TF not in the vio list, add them as a first vio
-            await self.backupqdata(ctx.message.author.nick, ctx.message.content)
+            await self.backupqdata(ctx.message.author.nick, ctx.message.content, "violations")
             self.rqobj["violations"][tf] = {}
             self.rqobj["violations"][tf]["count"] = 1
             ts = datetime.utcnow() + timedelta(days=30)
@@ -720,7 +724,7 @@ class BoomBeach:
             self.rqobj["queue"][str(count)]["posttime"] = post.timestamp()
             self.rqobj["queue"][str(count)]["pingtime"] = ping.timestamp()
             count += 1
-        await self.backupqdata(ctx.message.author.nick, ctx.message.content)
+        await self.backupqdata(ctx.message.author.nick, ctx.message.content, "queue")
         dataIO.save_json(queue_file, self.rqobj)
         await self._queue_post()
         setmsg = await self.bot.say("The first entry in the queue has been set to today, and any subsequent ones have been adjusted accordingly.")
@@ -892,7 +896,7 @@ class BoomBeach:
         if removednumber is None:
             return False
         else:
-            await self.backupqdata(author, content)
+            await self.backupqdata(author, content, "queue")
             count = removednumber
             if self.rqobj["queue"][str(removednumber)]["ackpost"] is not None:
                 msg = await self.bot.get_message(self.bot.get_channel(self.queuechannel), self.rqobj["queue"][str(removednumber)]["ackpost"])
@@ -982,7 +986,7 @@ class BoomBeach:
                         continue
                     else:
                         if datetime.utcnow().timestamp() > self.rqobj["violations"][tfname]["time"]:
-                            await self.backupqdata("Intel", "self.queue_loop() clear violation") # ctx.message.author.nick, ctx.message.content
+                            await self.backupqdata("Intel", "self.queue_loop() clear violation", "violations") # ctx.message.author.nick, ctx.message.content
                             self.rqobj["violations"][tfname]["time"] = None
                             dataIO.save_json(queue_file, self.rqobj)
                             await self._queue_post()
