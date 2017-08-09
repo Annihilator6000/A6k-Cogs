@@ -899,8 +899,11 @@ class BoomBeach:
             await self.backupqdata(author, content, "queue")
             count = removednumber
             if self.rqobj["queue"][str(removednumber)]["ackpost"] is not None:
-                msg = await self.bot.get_message(self.bot.get_channel(self.queuechannel), self.rqobj["queue"][str(removednumber)]["ackpost"])
-                await self.bot.delete_message(msg)
+                try:
+                    msg = await self.bot.get_message(self.bot.get_channel(self.queuechannel), self.rqobj["queue"][str(removednumber)]["ackpost"])
+                    await self.bot.delete_message(msg)
+                except:
+                    print("boombeach.py queue_remove Message Not Found exception for {}".format(self.rqobj["queue"][str(removednumber)]["TF"]))
             while count < len(self.rqobj["queue"]):
                 self.rqobj["queue"][str(count)] = self.rqobj["queue"][str(count+1)]
                 # print("{}".format(self.rqobj["queue"][str(count)]))
@@ -954,6 +957,32 @@ class BoomBeach:
         self.rqobj["settings"]["violations"] = vio
         dataIO.save_json(queue_file, self.rqobj)
 
+    @rq.command(no_pm=True, pass_context=True, name="pinglist")
+    @checks.mod()
+    async def rq_pinglist(self, ctx):
+        """Displays the current ping list that is used in the queue."""
+        # print("channel id: {} - isinstance string: {}".format(ctx.message.channel.id, isinstance(ctx.message.channel.id, str)))
+        if (self.queuechannel != ctx.message.channel.id) and (self.opchannel != ctx.message.channel.id) and ('340269179737210890' != ctx.message.channel.id):  # recruitmentqueue, op room, or bot testing
+            return
+        plist = "Queue ping list:\n```\n"
+        for tf in sorted(list(self.rqobj["TFs"].keys())):
+            # plist += "{:<9} {}\n".format(str(tf) + ":", ", ".join(self.rqobj["TFs"][tf]))
+            plist += "{:<9}".format(str(tf) + ":")
+            for mbrid in self.rqobj["TFs"][tf]:
+                # plist += " " + str(ctx.message.server.get_member(mbrid).nick) # ", ".join(self.rqobj["TFs"][tf])
+                plist += "  " + str(discord.utils.get(ctx.message.server.members, id=mbrid)) # ", ".join(self.rqobj["TFs"][tf])
+            plist += "\n"
+        plist += "```\nThis message and your `{}rq pinglist` command will be deleted automatically after 60 seconds.".format(ctx.prefix)
+        plmsg = await self.bot.say(plist)
+        msgdel = []
+        msgdel.append(ctx.message)
+        msgdel.append(plmsg)
+        await asyncio.sleep(60)
+        await self._delnewmembermsgs(msgdel)
+
+    # TODO: add functions to add and remove people in the ping list. Possibly have the bot remember who did the
+    # ..rq add and use them as a pingee.
+
     async def queue_loop(self):
         while self == self.bot.get_cog('BoomBeach'):
             # example data:
@@ -1002,14 +1031,15 @@ class BoomBeach:
                 if now > oneposttime + self.queueduration:
                     # if it's been more than 2 days that the post has been able to be up then delete it, along with the ackpost (ping)
                     # await self.backupqdata("Intel", "self.queue_loop() delete - past queue duration") # ctx.message.author.nick, ctx.message.content
-                    if self.rqobj["queue"]["1"]["ackpost"] is not None:
-                        ackmsg = None
-                        try:
-                            ackmsg = await self.bot.get_message(self.bot.get_channel(self.queuechannel), self.rqobj["queue"]["1"]["ackpost"])
-                        except:
-                            print("boombeach.py queue_loop ackpost message not found for {}".format(self.rqobj["queue"]["1"]["TF"]))
-                        if ackmsg is not None:
-                            await self.bot.delete_message(ackmsg)
+                    # comment out stuff below - it's handled in queue_remove
+                    # if self.rqobj["queue"]["1"]["ackpost"] is not None:
+                    #     ackmsg = None
+                    #     try:
+                    #         ackmsg = await self.bot.get_message(self.bot.get_channel(self.queuechannel), self.rqobj["queue"]["1"]["ackpost"])
+                    #     except:
+                    #         print("boombeach.py queue_loop ackpost message not found for {}".format(self.rqobj["queue"]["1"]["TF"]))
+                    #     if ackmsg is not None:
+                    #         await self.bot.delete_message(ackmsg)
                     if await self.queue_remove(self.rqobj["queue"]["1"]["TF"], "Intel", "self.queue_loop() delete - past queue duration", True) == True:
                         print("Deleted the first entry from the queue")
                     else:
