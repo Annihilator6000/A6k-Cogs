@@ -962,23 +962,24 @@ class BoomBeach:
     async def rq_pinglist(self, ctx):
         """Displays the current ping list that is used in the queue."""
         # print("channel id: {} - isinstance string: {}".format(ctx.message.channel.id, isinstance(ctx.message.channel.id, str)))
-        if (self.queuechannel != ctx.message.channel.id) and (self.opchannel != ctx.message.channel.id) and ('340269179737210890' != ctx.message.channel.id):  # recruitmentqueue, op room, or bot testing
-            return
-        plist = "Queue ping list:\n```\n"
-        for tf in sorted(list(self.rqobj["TFs"].keys())):
-            # plist += "{:<9} {}\n".format(str(tf) + ":", ", ".join(self.rqobj["TFs"][tf]))
-            plist += "{:<9}".format(str(tf) + ":")
-            for mbrid in self.rqobj["TFs"][tf]:
-                # plist += " " + str(ctx.message.server.get_member(mbrid).nick) # ", ".join(self.rqobj["TFs"][tf])
-                plist += "  " + str(discord.utils.get(ctx.message.server.members, id=mbrid)) # ", ".join(self.rqobj["TFs"][tf])
-            plist += "\n"
-        plist += "```\nThis message and your `{}rq pinglist` command will be deleted automatically after 60 seconds.".format(ctx.prefix)
-        plmsg = await self.bot.say(plist)
-        msgdel = []
-        msgdel.append(ctx.message)
-        msgdel.append(plmsg)
-        await asyncio.sleep(60)
-        await self._delnewmembermsgs(msgdel)
+        if ctx.invoked_subcommand is None:
+            if (self.queuechannel != ctx.message.channel.id) and (self.opchannel != ctx.message.channel.id) and ('340269179737210890' != ctx.message.channel.id):  # recruitmentqueue, op room, or bot testing
+                return
+            plist = "Queue ping list:\n```\n"
+            for tf in sorted(list(self.rqobj["TFs"].keys())):
+                # plist += "{:<9} {}\n".format(str(tf) + ":", ", ".join(self.rqobj["TFs"][tf]))
+                plist += "{:<9}".format(str(tf) + ":")
+                for mbrid in self.rqobj["TFs"][tf]:
+                    # plist += " " + str(ctx.message.server.get_member(mbrid).nick) # ", ".join(self.rqobj["TFs"][tf])
+                    plist += "  " + str(discord.utils.get(ctx.message.server.members, id=mbrid)) # ", ".join(self.rqobj["TFs"][tf])
+                plist += "\n"
+            plist += "```\nThis message and your `{}rq pinglist` command will be deleted automatically after 60 seconds.".format(ctx.prefix)
+            plmsg = await self.bot.say(plist)
+            msgdel = []
+            msgdel.append(ctx.message)
+            msgdel.append(plmsg)
+            await asyncio.sleep(60)
+            await self._delnewmembermsgs(msgdel)
 
     @rq_pinglist.command(no_pm=True, pass_context=True, name="add")
     @checks.mod()
