@@ -957,7 +957,7 @@ class BoomBeach:
         self.rqobj["settings"]["violations"] = vio
         dataIO.save_json(queue_file, self.rqobj)
 
-    @rq.command(no_pm=True, pass_context=True, name="pinglist")
+    @rq.group(no_pm=True, pass_context=True, name="pinglist")
     @checks.mod()
     async def rq_pinglist(self, ctx):
         """Displays the current ping list that is used in the queue."""
