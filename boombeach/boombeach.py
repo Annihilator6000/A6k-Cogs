@@ -141,7 +141,7 @@ class BoomBeach:
         tribetime = datetime.utcnow()
         tribedate = datetime.utcfromtimestamp(1499644800)  # July 10th 00:00 UTC
         while tribedate < tribetime:
-            tribedate += timedelta(days=7)
+            tribedate += timedelta(days=14)
         tribedifference = tribedate - tribetime
         tribed = divmod(tribedifference.seconds, 86400)
         tribeh = divmod(tribed[1], 3600)
