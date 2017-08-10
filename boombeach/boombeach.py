@@ -995,7 +995,7 @@ class BoomBeach:
             await self.bot.say("This user is already in the pinglist.")
             return
         tf.append(user.id)
-        self.rqobject['TFs'][tfname] = tf
+        self.rqobj['TFs'][tfname] = tf
         dataIO.save_json(queue_file, self.rqobj)
         await self.bot.say("This user was added to the pinglist of the taskforce {}.".format(tfname))
 
@@ -1013,7 +1013,7 @@ class BoomBeach:
             await self.bot.say("This user isn't on the pinglist.")
             return
         tf.remove(user.id)
-        self.rqobject['TFs'][tfname] = tf
+        self.rqobj['TFs'][tfname] = tf
         dataIO.save_json(queue_file, self.rqobj)
         await self.bot.say("This user was removed from the pinglist of the taskforce {}.".format(tfname))
 
