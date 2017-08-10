@@ -983,9 +983,7 @@ class BoomBeach:
 
     @rq_pinglist.command(no_pm=True, pass_context=True, name="add")
     @checks.mod()
-    async def rq_pinglist_add(self, ctx, tfname: str, user):
-        if isinstance(user, int):
-            user = ctx.message.server.get_member(user)
+    async def rq_pinglist_add(self, ctx, tfname: str, user: discord.Member):
         if user is None:
             await self.bot.say("This user doesn't exist or couldn't be found.")
             return
@@ -1003,9 +1001,7 @@ class BoomBeach:
 
     @rq_pinglist.command(no_pm=True, pass_context=True, name="remove")
     @checks.mod()
-    async def rq_pinglist_remove(self, ctx, tfname: str, user):
-        if isinstance(user, int):
-            user = ctx.message.server.get_member(user)
+    async def rq_pinglist_remove(self, ctx, tfname: str, user: discord.Member):
         if user is None:
             await self.bot.say("This user doesn't exist or couldn't be found.")
             return
