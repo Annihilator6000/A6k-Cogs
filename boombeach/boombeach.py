@@ -980,8 +980,45 @@ class BoomBeach:
         await asyncio.sleep(60)
         await self._delnewmembermsgs(msgdel)
 
-    # TODO: add functions to add and remove people in the ping list. Possibly have the bot remember who did the
-    # ..rq add and use them as a pingee.
+    @rq_pinglist.command(no_pm=True, pass_context=True, name="add")
+    @checks.mod()
+    async def rq_pinglist_add(self, ctx, tfname: str, user):
+        if isinstance(user, int):
+            user = ctx.message.server.get_member(user)
+        if user is None:
+            await self.bot.say("This user doesn't exist or couldn't be found.")
+            return
+        if not tfname in self.rqobj["TFs"]:
+            await self.bot.say("This taskforce does not exist or isn't registered.")
+            return
+        tf = self.rqobj['TFs'][tfname]
+        if user.id in tf:
+            await self.bot.say("This user is already in the pinglist.")
+            return
+        tf.append(user.id)
+        self.rqobject['TFs'][tfname] = tf
+        dataIO.save_json(queue_file, self.rqobj)
+        await self.bot.say("This user was added to the pinglist of the taskforce {}.".format(tfname))
+
+    @rq_pinglist.command(no_pm=True, pass_context=True, name="remove")
+    @checks.mod()
+    async def rq_pinglist_remove(self, ctx, tfname: str, user):
+        if isinstance(user, int):
+            user = ctx.message.server.get_member(user)
+        if user is None:
+            await self.bot.say("This user doesn't exist or couldn't be found.")
+            return
+        if not tfname in self.rqobj["TFs"]:
+            await self.bot.say("This taskforce does not exist or isn't registered.")
+            return
+        tf = self.rqobj['TFs'][tfname]
+        if not user.id in tf:
+            await self.bot.say("This user isn't on the pinglist.")
+            return
+        tf.remove(user.id)
+        self.rqobject['TFs'][tfname] = tf
+        dataIO.save_json(queue_file, self.rqobj)
+        await self.bot.say("This user was removed from the pinglist of the taskforce {}.".format(tfname))
 
     async def queue_loop(self):
         while self == self.bot.get_cog('BoomBeach'):
