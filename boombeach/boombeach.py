@@ -957,9 +957,9 @@ class BoomBeach:
         self.rqobj["settings"]["violations"] = vio
         dataIO.save_json(queue_file, self.rqobj)
 
-    @rq.group(no_pm=True, pass_context=True, name="pinglist")
+    @commands.group(no_pm=True, pass_context=True, name="pinglist")
     @checks.mod()
-    async def rq_pinglist(self, ctx):
+    async def pinglist(self, ctx):
         """Displays the current ping list that is used in the queue."""
         # print("channel id: {} - isinstance string: {}".format(ctx.message.channel.id, isinstance(ctx.message.channel.id, str)))
         if ctx.invoked_subcommand is None:
@@ -981,9 +981,9 @@ class BoomBeach:
             await asyncio.sleep(60)
             await self._delnewmembermsgs(msgdel)
 
-    @rq_pinglist.command(no_pm=True, pass_context=True, name="add")
+    @pinglist.command(no_pm=True, pass_context=True, name="add")
     @checks.mod()
-    async def rq_pinglist_add(self, ctx, tfname: str, user: discord.Member):
+    async def pinglist_add(self, ctx, tfname: str, user: discord.Member):
         if user is None:
             await self.bot.say("This user doesn't exist or couldn't be found.")
             return
@@ -999,9 +999,9 @@ class BoomBeach:
         dataIO.save_json(queue_file, self.rqobj)
         await self.bot.say("This user was added to the pinglist of the taskforce {}.".format(tfname))
 
-    @rq_pinglist.command(no_pm=True, pass_context=True, name="remove")
+    @pinglist.command(no_pm=True, pass_context=True, name="remove")
     @checks.mod()
-    async def rq_pinglist_remove(self, ctx, tfname: str, user: discord.Member):
+    async def pinglist_remove(self, ctx, tfname: str, user: discord.Member):
         if user is None:
             await self.bot.say("This user doesn't exist or couldn't be found.")
             return
