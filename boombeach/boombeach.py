@@ -141,7 +141,7 @@ class BoomBeach:
         tribetime = datetime.utcnow()
         tribedate = datetime.utcfromtimestamp(1499644800)  # July 10th 00:00 UTC
         while tribedate < tribetime:
-            tribedate += timedelta(days=7)
+            tribedate += timedelta(days=14)
         tribedifference = tribedate - tribetime
         tribed = divmod(tribedifference.seconds, 86400)
         tribeh = divmod(tribed[1], 3600)
@@ -242,7 +242,7 @@ class BoomBeach:
                 bcs = self.bcsmokecheck(ctx)
 
                 if admin is True or (tf.lower() in userroles.lower()) or (bcs is True and tf.lower() == "bc/smoke"):
-                    await self.backupqdata(ctx.message.author.nick, ctx.message.content, "queue")
+                    await self.backupqdata(ctx.message.author.nick if ctx.message.author.nick else ctx.message.author.name, ctx.message.content, "queue")
                     position = len(self.rqobj["queue"]) + 1
                     self.rqobj["queue"][str(position)] = {}
                     self.rqobj["queue"][str(position)]["position"] = position
@@ -490,7 +490,7 @@ class BoomBeach:
             await self._delnewmembermsgs(msgdel)
             return
 
-        await self.backupqdata(ctx.message.author.nick, ctx.message.content, "queue")
+        await self.backupqdata(ctx.message.author.nick if ctx.message.author.nick else ctx.message.author.name, ctx.message.content, "queue")
 
         newpos = None
         if direction == "up":
@@ -599,7 +599,7 @@ class BoomBeach:
                 msgdel.append(notifymsg)
                 await self._delnewmembermsgs(msgdel)
                 return
-            await self.backupqdata(ctx.message.author.nick, ctx.message.content, "violations")
+            await self.backupqdata(ctx.message.author.nick if ctx.message.author.nick else ctx.message.author.name, ctx.message.content, "violations")
             self.rqobj["violations"][tf]["count"] += 1
             timeout = datetime.utcnow()
             # timeoutfuture = None
@@ -614,7 +614,7 @@ class BoomBeach:
             self.rqobj["violations"][tf]["reason"] = reason
         else:
             # TF not in the vio list, add them as a first vio
-            await self.backupqdata(ctx.message.author.nick, ctx.message.content, "violations")
+            await self.backupqdata(ctx.message.author.nick if ctx.message.author.nick else ctx.message.author.name, ctx.message.content, "violations")
             self.rqobj["violations"][tf] = {}
             self.rqobj["violations"][tf]["count"] = 1
             ts = datetime.utcnow() + timedelta(days=30)
@@ -724,7 +724,7 @@ class BoomBeach:
             self.rqobj["queue"][str(count)]["posttime"] = post.timestamp()
             self.rqobj["queue"][str(count)]["pingtime"] = ping.timestamp()
             count += 1
-        await self.backupqdata(ctx.message.author.nick, ctx.message.content, "queue")
+        await self.backupqdata(ctx.message.author.nick if ctx.message.author.nick else ctx.message.author.name, ctx.message.content, "queue")
         dataIO.save_json(queue_file, self.rqobj)
         await self._queue_post()
         setmsg = await self.bot.say("The first entry in the queue has been set to today, and any subsequent ones have been adjusted accordingly.")
@@ -957,31 +957,65 @@ class BoomBeach:
         self.rqobj["settings"]["violations"] = vio
         dataIO.save_json(queue_file, self.rqobj)
 
-    @rq.command(no_pm=True, pass_context=True, name="pinglist")
+    @commands.group(no_pm=True, pass_context=True, name="pinglist")
     @checks.mod()
-    async def rq_pinglist(self, ctx):
+    async def pinglist(self, ctx):
         """Displays the current ping list that is used in the queue."""
         # print("channel id: {} - isinstance string: {}".format(ctx.message.channel.id, isinstance(ctx.message.channel.id, str)))
-        if (self.queuechannel != ctx.message.channel.id) and (self.opchannel != ctx.message.channel.id) and ('340269179737210890' != ctx.message.channel.id):  # recruitmentqueue, op room, or bot testing
-            return
-        plist = "Queue ping list:\n```\n"
-        for tf in sorted(list(self.rqobj["TFs"].keys())):
-            # plist += "{:<9} {}\n".format(str(tf) + ":", ", ".join(self.rqobj["TFs"][tf]))
-            plist += "{:<9}".format(str(tf) + ":")
-            for mbrid in self.rqobj["TFs"][tf]:
-                # plist += " " + str(ctx.message.server.get_member(mbrid).nick) # ", ".join(self.rqobj["TFs"][tf])
-                plist += "  " + str(discord.utils.get(ctx.message.server.members, id=mbrid)) # ", ".join(self.rqobj["TFs"][tf])
-            plist += "\n"
-        plist += "```\nThis message and your `{}rq pinglist` command will be deleted automatically after 60 seconds.".format(ctx.prefix)
-        plmsg = await self.bot.say(plist)
-        msgdel = []
-        msgdel.append(ctx.message)
-        msgdel.append(plmsg)
-        await asyncio.sleep(60)
-        await self._delnewmembermsgs(msgdel)
+        if ctx.invoked_subcommand is None:
+            if (self.queuechannel != ctx.message.channel.id) and (self.opchannel != ctx.message.channel.id) and ('340269179737210890' != ctx.message.channel.id):  # recruitmentqueue, op room, or bot testing
+                return
+            plist = "Queue ping list:\n```\n"
+            for tf in sorted(list(self.rqobj["TFs"].keys())):
+                # plist += "{:<9} {}\n".format(str(tf) + ":", ", ".join(self.rqobj["TFs"][tf]))
+                plist += "{:<9}".format(str(tf) + ":")
+                for mbrid in self.rqobj["TFs"][tf]:
+                    # plist += " " + str(ctx.message.server.get_member(mbrid).nick) # ", ".join(self.rqobj["TFs"][tf])
+                    plist += "  " + str(discord.utils.get(ctx.message.server.members, id=mbrid)) # ", ".join(self.rqobj["TFs"][tf])
+                plist += "\n"
+            plist += "```\nThis message and your `{}rq pinglist` command will be deleted automatically after 60 seconds.".format(ctx.prefix)
+            plmsg = await self.bot.say(plist)
+            msgdel = []
+            msgdel.append(ctx.message)
+            msgdel.append(plmsg)
+            await asyncio.sleep(60)
+            await self._delnewmembermsgs(msgdel)
 
-    # TODO: add functions to add and remove people in the ping list. Possibly have the bot remember who did the
-    # ..rq add and use them as a pingee.
+    @pinglist.command(no_pm=True, pass_context=True, name="add")
+    @checks.mod()
+    async def pinglist_add(self, ctx, tfname: str, user: discord.Member):
+        if user is None:
+            await self.bot.say("This user doesn't exist or couldn't be found.")
+            return
+        if not tfname in self.rqobj["TFs"]:
+            await self.bot.say("This taskforce does not exist or isn't registered.")
+            return
+        tf = self.rqobj['TFs'][tfname]
+        if user.id in tf:
+            await self.bot.say("This user is already in the pinglist.")
+            return
+        tf.append(user.id)
+        self.rqobj['TFs'][tfname] = tf
+        dataIO.save_json(queue_file, self.rqobj)
+        await self.bot.say("This user was added to the pinglist of the taskforce {}.".format(tfname))
+
+    @pinglist.command(no_pm=True, pass_context=True, name="remove")
+    @checks.mod()
+    async def pinglist_remove(self, ctx, tfname: str, user: discord.Member):
+        if user is None:
+            await self.bot.say("This user doesn't exist or couldn't be found.")
+            return
+        if not tfname in self.rqobj["TFs"]:
+            await self.bot.say("This taskforce does not exist or isn't registered.")
+            return
+        tf = self.rqobj['TFs'][tfname]
+        if not user.id in tf:
+            await self.bot.say("This user isn't on the pinglist.")
+            return
+        tf.remove(user.id)
+        self.rqobj['TFs'][tfname] = tf
+        dataIO.save_json(queue_file, self.rqobj)
+        await self.bot.say("This user was removed from the pinglist of the taskforce {}.".format(tfname))
 
     async def queue_loop(self):
         while self == self.bot.get_cog('BoomBeach'):
