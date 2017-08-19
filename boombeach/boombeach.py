@@ -703,7 +703,7 @@ class BoomBeach:
 
     @rq.command(no_pm=True, pass_context=True, name="setstartday")
     @checks.mod()
-    async def rq_setstartday(self, ctx, year: int, month, int, day: int):
+    async def rq_setstartday(self, ctx, year: int, month: int, day: int):
         """Manually sets the starting UTC day of the queue.
 
         usage: ..rq setstartday year month day"""
