@@ -1029,7 +1029,7 @@ class BoomBeach:
     '''
 
     @commands.group(no_pm=True, pass_context=True, name="pinglist")
-    @checks.has_any_role('Admin', 'Moderators', 'Global Operators', 'TFC Leaders')
+    @commands.has_any_role('Admin', 'Moderators', 'Global Operators', 'TFC Leaders')
     async def pinglist(self, ctx):
         """Displays the current ping list that is used in the queue."""
         # print("channel id: {} - isinstance string: {}".format(ctx.message.channel.id, isinstance(ctx.message.channel.id, str)))
@@ -1076,22 +1076,26 @@ class BoomBeach:
             cantadd = await self.bot.say("You can only add a member to your own TF. If you need assistance please contact a GO.")
             msgdel.append(cantadd)
             await asyncio.sleep(30)
+            await self._delnewmembermsgs(msgdel)
             return
         if user is None:
             nouser = await self.bot.say("This user doesn't exist or couldn't be found.")
             msgdel.append(nouser)
             await asyncio.sleep(30)
+            await self._delnewmembermsgs(msgdel)
             return
         if tfname not in self.rqobj["TFs"]:
             notf = await self.bot.say("{} is not a valid TF. Choose a TF from `{}rq listtfs` and try again.".format(tfname, ctx.prefix))
             msgdel.append(notf)
             await asyncio.sleep(30)
+            await self._delnewmembermsgs(msgdel)
             return
         tf = self.rqobj['TFs'][tfname]
         if user.id in tf:
             noadd = await self.bot.say("This user is already in the pinglist.")
             msgdel.append(noadd)
             await asyncio.sleep(30)
+            await self._delnewmembermsgs(msgdel)
             return
         tf.append(user.id)
         self.rqobj['TFs'][tfname] = tf
@@ -1099,6 +1103,7 @@ class BoomBeach:
         wasadded = await self.bot.say("{} was added to the pinglist for {}.".format(user.nick if user.nick else user.name, tfname))
         msgdel.append(wasadded)
         await asyncio.sleep(30)
+        await self._delnewmembermsgs(msgdel)
 
     @pinglist.command(no_pm=True, pass_context=True, name="remove")
     # @checks.mod()
@@ -1117,22 +1122,26 @@ class BoomBeach:
             cantremove = await self.bot.say("You can only remove a member from your own TF. If you need assistance please contact a GO.")
             msgdel.append(cantremove)
             await asyncio.sleep(30)
+            await self._delnewmembermsgs(msgdel)
             return
         if user is None:
             nouser = await self.bot.say("This user doesn't exist or couldn't be found.")
             msgdel.append(nouser)
             await asyncio.sleep(30)
+            await self._delnewmembermsgs(msgdel)
             return
         if tfname not in self.rqobj["TFs"]:
             notf = await self.bot.say("{} is not a valid TF. Choose a TF from `{}rq listtfs` and try again.".format(tfname, ctx.prefix))
             msgdel.append(notf)
             await asyncio.sleep(30)
+            await self._delnewmembermsgs(msgdel)
             return
         tf = self.rqobj['TFs'][tfname]
         if user.id not in tf:
             noton = await self.bot.say("This user is not on the pinglist.")
             msgdel.append(noton)
             await asyncio.sleep(30)
+            await self._delnewmembermsgs(msgdel)
             return
         tf.remove(user.id)
         self.rqobj['TFs'][tfname] = tf
@@ -1140,6 +1149,7 @@ class BoomBeach:
         wasremoved = await self.bot.say("{} was removed from the pinglist for {}.".format(user.nick if user.nick else user.name, tfname))
         msgdel.append(wasremoved)
         await asyncio.sleep(30)
+        await self._delnewmembermsgs(msgdel)
 
     async def queue_loop(self):
         while self == self.bot.get_cog('BoomBeach'):
