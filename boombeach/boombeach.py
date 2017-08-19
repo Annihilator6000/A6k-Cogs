@@ -322,7 +322,7 @@ class BoomBeach:
         userroles = ", ".join(r.name for r in ctx.message.author.roles)
         tflist = ", ".join(self.rqobj["TFs"].keys())
         if tf.lower() not in tflist.lower():
-            errormsg = await self.bot.say("That TF isn't in my list. Please check `{}queue listtfs` for valid names and try again. If this message is in error please contact Annihilator6000 (`@Annihilator6000#2526`)".format(ctx.prefix))
+            errormsg = await self.bot.say("That TF isn't in my list. Please check `{}rq listtfs` for valid names and try again. If this message is in error please contact Annihilator6000 (`@Annihilator6000#2526`)".format(ctx.prefix))
             await asyncio.sleep(30)
             msgdel.append(errormsg)
             await self._delnewmembermsgs(msgdel)
@@ -701,6 +701,49 @@ class BoomBeach:
         dataIO.save_json(queue_file, self.rqobj)
         await self._queue_post()
 
+    @rq.command(no_pm=True, pass_context=True, name="setstartday")
+    @checks.mod()
+    async def rq_setstartday(self, ctx, year: int, month, int, day: int):
+        """Manually sets the starting UTC day of the queue.
+
+        usage: ..rq setstartday year month day"""
+        # oneday = timedelta(days=1)
+        msgdel = []
+        msgdel.append(ctx.mesage)
+        if len(rqobj["queue"]) == 0:
+            noqueue = await self.bot.say("I can not set the start day of the queue if it's empty you silly goose.")
+            msgdel.append(noqueue)
+            await asyncio.sleep(30)
+            await self._delnewmembermsgs(msgdel)
+            return
+        post = datetime.datetime(year, month, day, tzinfo=None)
+        ping = post - timedelta(hours=4)
+        verifymsg = await self.bot.say("You are about to set the start of the queue to {}, is this correct?".format(post))
+        msgdel.append(verifymsg)
+        ansmsg = await self.bot.wait_for_message(timeout=30, author=ctx.message.author, channel=ctx.message.channel)
+        if ansmsg is not None:
+            msgdel.append(ansmsg)
+            yescheck = ["yes", "Yes", "yes.", "Yes.", "Ye", "ye", "Y", "y"]
+            if ansmsg.content not in yescheck:
+                infomsg = await self.bot.say("Cancelling changing the start day of the queue...")
+                msgdel.append(infomsg)
+                await asyncio.sleep(30)
+                await self._delnewmembermsgs(msgdel)
+                return
+        count = 1
+        while count <= len(self.rqobj["queue"]):
+            self.rqobj["queue"][str(count)]["posttime"] = post.timestamp()
+            self.rqobj["queue"][str(count)]["pingtime"] = ping.timestamp()
+            post += timedelta(days=2)
+            ping += timedelta(days=2)
+            count += 1
+        dataIO.save_json(queue_file, self.rqobj)
+        await self._queue_post()
+        infomsg = await self.bot.say("The start of the queue has been changed to {}/{}/{} UTC. Initiating cleanup...")
+        msgdel.append(infomsg)
+        await asyncio.sleep(30)
+        await self._delnewmembermsgs(msgdel)
+
     @rq.command(no_pm=True, pass_context=True, name="settoday")
     @checks.mod()
     async def rq_settoday(self, ctx):
@@ -911,7 +954,9 @@ class BoomBeach:
                 count += 1
             del self.rqobj["queue"][str(len(self.rqobj["queue"]))]
             count = removednumber
-            while count <= len(self.rqobj["queue"]) and fromloop is False:
+            nowutc = datetime.utcnow()
+            firstposttime = datetime.fromtimestamp(self.rqobj["queue"]["1"]["pingtime"])
+            while count <= len(self.rqobj["queue"]) and fromloop is False and (nowutc.timestamp() < firstposttime.timestamp()):
                 # NEED to add code to check for if it's the first entry being deleted, and that it's past their post window
                 # IF it is then the times don't need to be modified.
                 curposttime = datetime.fromtimestamp(self.rqobj["queue"][str(count)]["posttime"])
@@ -957,8 +1002,9 @@ class BoomBeach:
         self.rqobj["settings"]["violations"] = vio
         dataIO.save_json(queue_file, self.rqobj)
 
+    ''' original backup
     @commands.group(no_pm=True, pass_context=True, name="pinglist")
-    @checks.mod()
+    @checks.has_any_role('Admin', 'Moderators', 'Global Operators', 'TFC Leaders')
     async def pinglist(self, ctx):
         """Displays the current ping list that is used in the queue."""
         # print("channel id: {} - isinstance string: {}".format(ctx.message.channel.id, isinstance(ctx.message.channel.id, str)))
@@ -980,42 +1026,120 @@ class BoomBeach:
             msgdel.append(plmsg)
             await asyncio.sleep(60)
             await self._delnewmembermsgs(msgdel)
+    '''
+
+    @commands.group(no_pm=True, pass_context=True, name="pinglist")
+    @checks.has_any_role('Admin', 'Moderators', 'Global Operators', 'TFC Leaders')
+    async def pinglist(self, ctx):
+        """Displays the current ping list that is used in the queue."""
+        # print("channel id: {} - isinstance string: {}".format(ctx.message.channel.id, isinstance(ctx.message.channel.id, str)))
+        if ctx.invoked_subcommand is None:
+            if (self.queuechannel != ctx.message.channel.id) and (self.opchannel != ctx.message.channel.id) and ('340269179737210890' != ctx.message.channel.id):  # recruitmentqueue, op room, or bot testing
+                return
+            admin = False
+            adminroles = ["Moderators", "Global Operators"]
+            userroles = ", ".join(r.name for r in ctx.message.author.roles)
+            for ar in adminroles:
+                if ar in userroles:
+                    admin = True
+            plist = "Queue ping list:\n```\n"
+            for tf in sorted(list(self.rqobj["TFs"].keys())):
+                if admin is True or tf.lower() in userroles.lower():
+                    # plist += "{:<9} {}\n".format(str(tf) + ":", ", ".join(self.rqobj["TFs"][tf]))
+                    plist += "{:<9}".format(str(tf) + ":")
+                    for mbrid in self.rqobj["TFs"][tf]:
+                        # plist += " " + str(ctx.message.server.get_member(mbrid).nick) # ", ".join(self.rqobj["TFs"][tf])
+                        plist += "  " + str(discord.utils.get(ctx.message.server.members, id=mbrid))  # ", ".join(self.rqobj["TFs"][tf])
+                        plist += "\n"
+            plist += "```\nThis message and your `{}pinglist` command will be deleted automatically after 60 seconds.".format(ctx.prefix)
+            plmsg = await self.bot.say(plist)
+            msgdel = []
+            msgdel.append(ctx.message)
+            msgdel.append(plmsg)
+            await asyncio.sleep(60)
+            await self._delnewmembermsgs(msgdel)
 
     @pinglist.command(no_pm=True, pass_context=True, name="add")
-    @checks.mod()
+    # @checks.mod()
+    # TODO: Add code to auto delete messages
     async def pinglist_add(self, ctx, tfname: str, user: discord.Member):
-        if user is None:
-            await self.bot.say("This user doesn't exist or couldn't be found.")
+        tfname = tfname.title()
+        admin = False
+        adminroles = ["Moderators", "Global Operators"]
+        userroles = ", ".join(r.name for r in ctx.message.author.roles)
+        for ar in adminroles:
+            if ar in userroles:
+                admin = True
+        msgdel = []
+        msgdel.append(ctx.message)
+        if admin is False and tfname.lower() not in userroles.lower():
+            cantadd = await self.bot.say("You can only add a member to your own TF. If you need assistance please contact a GO.")
+            msgdel.append(cantadd)
+            await asyncio.sleep(30)
             return
-        if not tfname in self.rqobj["TFs"]:
-            await self.bot.say("This taskforce does not exist or isn't registered.")
+        if user is None:
+            nouser = await self.bot.say("This user doesn't exist or couldn't be found.")
+            msgdel.append(nouser)
+            await asyncio.sleep(30)
+            return
+        if tfname not in self.rqobj["TFs"]:
+            notf = await self.bot.say("{} is not a valid TF. Choose a TF from `{}rq listtfs` and try again.".format(tfname, ctx.prefix))
+            msgdel.append(notf)
+            await asyncio.sleep(30)
             return
         tf = self.rqobj['TFs'][tfname]
         if user.id in tf:
-            await self.bot.say("This user is already in the pinglist.")
+            noadd = await self.bot.say("This user is already in the pinglist.")
+            msgdel.append(noadd)
+            await asyncio.sleep(30)
             return
         tf.append(user.id)
         self.rqobj['TFs'][tfname] = tf
         dataIO.save_json(queue_file, self.rqobj)
-        await self.bot.say("This user was added to the pinglist of the taskforce {}.".format(tfname))
+        wasadded = await self.bot.say("{} was added to the pinglist for {}.".format(user.nick if user.nick else user.name, tfname))
+        msgdel.append(wasadded)
+        await asyncio.sleep(30)
 
     @pinglist.command(no_pm=True, pass_context=True, name="remove")
-    @checks.mod()
+    # @checks.mod()
+    # TODO: Add code to auto delete messages
     async def pinglist_remove(self, ctx, tfname: str, user: discord.Member):
-        if user is None:
-            await self.bot.say("This user doesn't exist or couldn't be found.")
+        tfname = tfname.title()
+        admin = False
+        adminroles = ["Moderators", "Global Operators"]
+        userroles = ", ".join(r.name for r in ctx.message.author.roles)
+        for ar in adminroles:
+            if ar in userroles:
+                admin = True
+        msgdel = []
+        msgdel.append(ctx.message)
+        if admin is False and tfname.lower() not in userroles.lower():
+            cantremove = await self.bot.say("You can only remove a member from your own TF. If you need assistance please contact a GO.")
+            msgdel.append(cantremove)
+            await asyncio.sleep(30)
             return
-        if not tfname in self.rqobj["TFs"]:
-            await self.bot.say("This taskforce does not exist or isn't registered.")
+        if user is None:
+            nouser = await self.bot.say("This user doesn't exist or couldn't be found.")
+            msgdel.append(nouser)
+            await asyncio.sleep(30)
+            return
+        if tfname not in self.rqobj["TFs"]:
+            notf = await self.bot.say("{} is not a valid TF. Choose a TF from `{}rq listtfs` and try again.".format(tfname, ctx.prefix))
+            msgdel.append(notf)
+            await asyncio.sleep(30)
             return
         tf = self.rqobj['TFs'][tfname]
-        if not user.id in tf:
-            await self.bot.say("This user isn't on the pinglist.")
+        if user.id not in tf:
+            noton = await self.bot.say("This user is not on the pinglist.")
+            msgdel.append(noton)
+            await asyncio.sleep(30)
             return
         tf.remove(user.id)
         self.rqobj['TFs'][tfname] = tf
         dataIO.save_json(queue_file, self.rqobj)
-        await self.bot.say("This user was removed from the pinglist of the taskforce {}.".format(tfname))
+        wasremoved = await self.bot.say("{} was removed from the pinglist for {}.".format(user.nick if user.nick else user.name, tfname))
+        msgdel.append(wasremoved)
+        await asyncio.sleep(30)
 
     async def queue_loop(self):
         while self == self.bot.get_cog('BoomBeach'):
@@ -1041,7 +1165,7 @@ class BoomBeach:
             #   "pingtime" : 1501272000 ### July 28, 2017, 8:00 pm # Eastern time will be 4 pm
             # }
 
-            if self.rqobj["settings"]["violations"] == True:
+            if self.rqobj["settings"]["violations"] is True:
                 # test if violation times are over
                 for tfname in self.rqobj["violations"].keys():
                     if self.rqobj["violations"][tfname]["count"] == 3 or self.rqobj["violations"][tfname]["time"] is None:
