@@ -955,7 +955,11 @@ class BoomBeach:
             del self.rqobj["queue"][str(len(self.rqobj["queue"]))]
             count = removednumber
             nowutc = datetime.utcnow()
-            firstposttime = datetime.fromtimestamp(self.rqobj["queue"]["1"]["pingtime"])
+            if len(self.rqobj["queue"]) > 0:
+                # need this in case the first entry was the only entry and it was deleted above
+                firstposttime = datetime.fromtimestamp(self.rqobj["queue"]["1"]["pingtime"])
+            else:
+                firstposttime = 0
             while count <= len(self.rqobj["queue"]) and fromloop is False and (nowutc.timestamp() < firstposttime.timestamp()):
                 # NEED to add code to check for if it's the first entry being deleted, and that it's past their post window
                 # IF it is then the times don't need to be modified.
@@ -968,7 +972,9 @@ class BoomBeach:
                 count += 1
             if fromloop is True and len(self.rqobj["queue"]) > 0:
                 self.rqobj["settings"]["queuebegin"] = self.rqobj["queue"]["1"]["posttime"]
-            else:
+                # else:
+                #    self.rqobj["settings"]["queuebegin"] = None
+            if len(self.rqobj["queue"]) <= 0:
                 self.rqobj["settings"]["queuebegin"] = None
 
             dataIO.save_json(queue_file, self.rqobj)
@@ -1238,7 +1244,7 @@ class BoomBeach:
                             howlong = "in {} hours and {} minutes".format(hlth[0], hltm[0])
                         # pingmsg = await self.bot.send_message(self.bot.get_channel(self.queueping), "{} - **Reminder**, you will be able to put up your recruitment post for {} in just under 4 hours.".format(" ".join(pinglist), self.rqobj["queue"]["1"]["TF"]))
                         pingdata = "{} - **Reminder**, you will be able to put up your recruitment post for {} {}.".format(" ".join(pinglist), self.rqobj["queue"]["1"]["TF"], howlong)
-                        pingmsg = await self.bot.send_message(self.bot.get_channel(self.queueping), pingdata)
+                        pingmsg = await self.bot.send_message(self.bot.get_channel(self.queueping), pingdata + " This message will automatically be deleted when your recruitment period has ended.")
                         if self.rqobj["queue"]["1"]["TF"] == "Trichon":
                             await self.bot.send_message(self.bot.get_channel("206092939112349697"), pingdata)
                         self.rqobj["queue"]["1"]["ackpost"] = pingmsg.id
@@ -1270,7 +1276,7 @@ class BoomBeach:
                             howlong = "in {} hours and {} minutes".format(hlth[0], hltm[0])
                         # pingmsg = await self.bot.send_message(self.bot.get_channel(self.queueping), "{} - **Reminder**, you will be able to put up your recruitment post for {} in just under 4 hours.".format(" ".join(pinglist), self.rqobj["queue"]["2"]["TF"]))
                         pingdata = "{} - **Reminder**, you will be able to put up your recruitment post for {} {}.".format(" ".join(pinglist), self.rqobj["queue"]["2"]["TF"], howlong)
-                        pingmsg = await self.bot.send_message(self.bot.get_channel(self.queueping), pingdata)
+                        pingmsg = await self.bot.send_message(self.bot.get_channel(self.queueping), pingdata + " This message will automatically be deleted when your recruitment period has ended.")
                         if self.rqobj["queue"]["2"]["TF"] == "Trichon":
                             await self.bot.send_message(self.bot.get_channel("206092939112349697"), pingdata)
                         self.rqobj["queue"]["2"]["ackpost"] = pingmsg.id
