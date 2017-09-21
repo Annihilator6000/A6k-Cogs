@@ -113,7 +113,7 @@ class BoomBeach:
     '''
     
     @commands.command(pass_context=True, no_pm=True, aliases=["sh"])
-    async def splitheist(self, ctx, amount: int, *, members):
+    async def splitheist(self, ctx, amount: int, *members: discord.Member):
         """Splits heist winnings with other players.
         ..splitheist XXXXXXXX @user @user
         XXXXXXXX is the TOTAL amount won. You can add as many members to the command as you want. You may include yourself (but it won't give you extra).
@@ -121,20 +121,30 @@ class BoomBeach:
         if amount is None:
             await self.bot.say("You need to include an amount in the format `{}splitheist XXXXXXXX @user @user` where XXXXXXXX is the TOTAL amount won.".format(ctx.prefix))
             return
+        if amount < 2:
+            await self.bot.say("Why would you try to split less than 2 credits? If you think *really* hard, does that make sense? Just don't overdo it with the thinking, because I don't want your head to explode.")
+            return
         if members is None:
             await self.bot.say("You need to specify some members to share your winnings with silly: `{}splitheist XXXXXXXX @user @user` where XXXXXXXX is the TOTAL amount won.".format(ctx.prefix))
             return
-        members = members.split()
+        # members = members.split()
         validmembers = []
         user = ctx.message.author
+        bank = self.bot.get_cog('Economy').bank
+        print("{}'s bank balance: {}".format(user.name + "#" + user.discriminator, bank.get_balance(user)))
         for m in members:
             if not isinstance(m, discord.Member):  # not a discord member object
                 await self.bot.say("It seems you have tried to split your winnings with someone or something that is not a user's mention. Try using `@user` for each person that you want to split your winnings with.")
                 return
             else:
                 if m.id != user.id:
-                    validmembers.append(m)
-        await self.bot.say("You are about to split {} with the following {} members:\n```\n{}\n```\nProceed? (yes/no)".format(amount, len(validmembers), "\n".join(m.name for m in validmembers)))
+                    if bank.account_exists(m):
+                        print("{}'s bank balance: {}".format(m.name + "#" + m.discriminator, bank.get_balance(m)))
+                        validmembers.append(m)
+                    else:
+                        await self.bot.say("I can not complete the split because {} doesn't have a bank account - which is strange seeing as you're trying to split a bank heist with them (which requires a bank account). I think you dun goofed. :thinking:".format(m.name))
+                        return
+        await self.bot.say("You are about to split {} credits with the following {} member(s):\n```\n{}\n```\nProceed? (yes/no)".format(amount, len(validmembers), "\n".join(m.name for m in validmembers)))
         answer = await self.bot.wait_for_message(timeout=20, author=ctx.message.author, channel=ctx.message.channel) # timeout, author, channel
         if answer is not None:  # timeout
             if answer.content not in ["Yes", "yes", "Y", "y"]:
@@ -143,14 +153,13 @@ class BoomBeach:
         else:
             await self.bot.say("So, uh... was 20 seconds not enough time to type `yes`? Maybe I missed it because I was too busy *sleeping* while waiting for you :fire:")
             return
-        bank = self.bot.get_cog('Economy').bank
         splitamt = int(round(amount/(len(validmembers)+1)))
         withdrawamt = splitamt * len(validmembers)
-        print("splitheist info ({}):\nAmount: {}\nWithdraw amount: {}\nSplit amount: {}\nUser: {}\nPayee(s): {}".format(datetime.now(), amount, withdrawamt, splitamt, user.name, vm.id for vm in validmembers))
+        print("splitheist info ({}):\nAmount: {}\nWithdraw amount: {}\nSplit amount:    {}\nUser: {}\nPayee(s): {}".format(datetime.now(), amount, withdrawamt, splitamt, user.name + "#" + user.discriminator, " ".join(vm.name + "#" + vm.discriminator for vm in validmembers)))
         bank.withdraw_credits(user, withdrawamt)
         for vm in validmembers:
             bank.deposit_credits(vm, splitamt)
-        await self.bot.say("I have split {} into {} equal amount(s) of {} and distributed it between: {}, {}. I have also withdrawn my standard fee of 25k from your account because I'm shady af. (I'm j/k about that last part lol)".format(amount, len(validmembers)+1, splitamt, user.name, ", ".join(vm.name for vm in validmembers)))
+        await self.bot.say("I have split {} credits into {} equal amounts of {} credits and distributed it between: {} and {}. I have also withdrawn my standard fee of 25k from your account because I'm shady af. (I'm j/k about that last part lol).".format(amount, len(validmembers)+1, splitamt, ", ".join(vm.name for vm in validmembers), user.name))
 
     @commands.command(pass_context=True, no_pm=True)
     async def reset(self, ctx):
