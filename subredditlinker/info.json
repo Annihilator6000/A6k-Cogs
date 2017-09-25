@@ -1,0 +1,9 @@
+{
+    "AUTHOR" : "Annihilator6000",
+    "SHORT" : "Subreddit Linker",
+    "DESCRIPTION" : "Scans for subreddit shorthand in comments and produces clickable links for the subreddits that it finds.",
+    "DISABLED" : false,
+    "NAME" : "subredditlinker",
+    "TAGS" : ["SubredditLinker", "subreddit", "Reddit", "links"],
+    "INSTALL_MSG" : "SubredditLinker scans messages for subreddit shorthand (such as /r/discordapp) and outputs usable links to the subreddits it finds. It also has an ignore feature built in to ignore specified channels. https://github.com/Annihilator6000/A6k-Cogs"
+}
