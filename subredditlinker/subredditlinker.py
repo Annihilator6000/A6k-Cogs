@@ -84,11 +84,6 @@ class SubredditLinker:
         await self.bot.say("SubredditLinker is ignoring the following channels:\n```\n{}\n```".format(ilist))
 
     async def message_listener(self, message):
-        # try:
-        #     if message.channel.id in self.ignores[message.server.id]:
-        #         return
-        # except:
-        #     pass
         server = message.server
         if server is None:
             return
@@ -97,9 +92,7 @@ class SubredditLinker:
         if server.id in self.ignores.keys():
             if message.channel.id in self.ignores[server.id]:
                 return
-        # subcheck = re.compile(r'\s\/[rR]\/[a-zA-Z0-9_]{3,21}\s', re.IGNORECASE)
-        # subcheck = re.compile(r'(?<!\S)\/r\/[a-zA-Z0-9_]{3,21}(?:\/)?(?!\S)', re.IGNORECASE)
-        subcheck = re.compile(r'(/[rR]/[a-zA-Z0-9_]{3,21}(?:/))', re.IGNORECASE)
+        subcheck = re.compile(r'(?<!\S)(\/r\/[a-zA-Z0-9_]{3,21})(?:\/)?(?!\S)', re.IGNORECASE)
         subs = subcheck.findall(message.content)
         if len(subs) > 0:
             slembed = discord.Embed(description="SubredditLinker", colour=discord.Color.magenta())
