@@ -6,6 +6,10 @@ from .utils import checks
 from .utils.dataIO import dataIO
 from __main__ import send_cmd_help
 
+# NOTE: The scheduler cog from Squid-Plugins conflicts with this cog. The scheduler cog "fakes" messages so that on the back
+# end those scheduled messages appear to be coming from the person that created them, and from the room that they were
+# created in. My workaround for this issue was to recreate the scheduled message in a room that is ignored by this cog.
+
 class SubredditLinker:
     """Creates links for subreddits found in comments."""
     
