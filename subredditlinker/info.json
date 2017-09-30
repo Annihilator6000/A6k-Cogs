@@ -5,5 +5,5 @@
     "DISABLED" : false,
     "NAME" : "subredditlinker",
     "TAGS" : ["SubredditLinker", "subreddit", "Reddit", "links"],
-    "INSTALL_MSG" : "SubredditLinker scans messages for subreddit shorthand (such as /r/discordapp) and outputs usable links to the subreddits it finds. It also has an ignore feature built in to ignore specified channels. https://github.com/Annihilator6000/A6k-Cogs"
+    "INSTALL_MSG" : "\nSubredditLinker scans messages for subreddit shorthand (such as /r/discordapp) and outputs usable links to the subreddits it finds. It also has an ignore feature built in to ignore specified channels.\n\nNOTE: The scheduler cog from Squid-Plugins can possibly conflict with this cog. It won't break this, but rather it might cause unwanted subreddit links if there is a subreddit included as `/r/subreddit` in the scheduled message. It has to do with the way that scheduler messages are sent. It makes Discord think that the scheduled message comes from the user that created it, and from the channel that it was created in. The workaround for this is to either edit out the subreddit mention in the scheduled message, or ignore the channel that the scheduled messages are created in.\n\nhttps://github.com/Annihilator6000/A6k-Cogs"
 }
