@@ -10,6 +10,7 @@ from copy import deepcopy
 from cogs.utils.chat_formatting import *
 from cogs.utils.dataIO import dataIO
 from random import sample
+from __main__ import send_cmd_help
 
 planty_file = "data/boombeach/planty.json"
 tfdata_file = "data/boombeach/tfdata.json"
@@ -17,6 +18,7 @@ approve_file = "data/boombeach/approve.json"
 queue_file = "data/boombeach/queue.json"
 # msgdel = []
 
+# TODO: add a check in case Discord servers go down and screw up the queue data
 
 class BoomBeach:
 
@@ -77,6 +79,23 @@ class BoomBeach:
             else:  # They don't have it, so add it
                 await self.bot.add_roles(ctx.message.author, role)
             await self.bot.delete_message(ctx.message)
+
+    @commands.command(pass_context=True, no_pm=True)
+    async def tenman(self, ctx):
+        """Allows a user to set or unset the 10man role on themself."""
+        if "181243681951449088" in ctx.message.server.id:
+            server = ctx.message.author.server
+            # roleid = ''  # 10man
+            rolename = "10man"
+            roles = server.roles
+            role = discord.utils.get(roles, name=rolename)
+            userroles = ctx.message.author.roles
+            if role in userroles:
+                await self.bot.remove_roles(ctx.message.author, role)
+                await self.bot.say("You no longer have access to the 10man room.")
+            else:
+                await self.bot.add_roles(ctx.message.author, role)
+                await self.bot.say("You now have access to the 10man room.")
 
     @commands.command(pass_context=True, no_pm=True)
     async def getchannelsback(self, ctx):
@@ -196,6 +215,83 @@ class BoomBeach:
         tribeh = divmod(tribed[1], 3600)
         tribem = divmod(tribeh[1], 60)
         await self.bot.say("Intel reset is in {} days {} hours {} minutes  +/- 15 minutes\n\n**Note:** Intel reset times are different for every TF, but they **all** occur between 00:00 GMT and 00:30 GMT on Sundays. The time above is standardized to 00:15 GMT, and is why +/- 15 minutes is shown.\n\nTribal boost reset is in {} days {} hours {} minutes.".format(futureobj.days, h[0], m[0], tribedifference.days, tribeh[0], tribem[0]))
+    
+    @commands.group(pass_context=True, no_pm=True)
+    @checks.mod_or_permissions()
+    async def channel(self, ctx):
+        """Allows GOs/Mods to edit a channel name or description without using the All-TF-Chats role."""
+        if ctx.invoked_subcommand is None:
+            await send_cmd_help(ctx)
+        
+    @channel.command(pass_context=True, no_pm=True)
+    async def name(self, ctx, newname, channel: discord.Channel=None):
+        """Sets the channel name. If no channel is specified the current channel is used."""
+        if newname is None or newname == "":
+            await self.bot.say("Sets the channel name. Example: `{}channel name newchannel` would change the channel name to 'newchannel'")
+            return
+        else:
+            if channel is None:
+                channel = ctx.message.channel
+            user = ctx.message.author
+            oldname = channel.name
+            cid = channel.id
+            await self.bot.say("Are you sure that you want to change the name of channel {} from **{}** to **{}**? [Y/N]".format(channel.id, oldname, newname))
+            namecheck = await self.bot.wait_for_message(timeout=30, author=user, channel=ctx.message.channel)
+            if namecheck is not None:
+                yescheck = ["yes", "Yes", "yes.", "Yes.", "Ye", "ye", "Y", "y"]
+                if namecheck.content in yescheck:
+                    # await self.editchannelperms(channel, user)
+                    await self.bot.edit_channel(channel, name=newname) # ['name': name])
+                    # await self.deletechannelperms(channel, user)
+                    await self.bot.say("Channel **{}** renamed to **{}**".format(oldname, newname))
+                    await self.bot.send_message(self.bot.get_channel(self.modlogchannel),
+                                                "My `..channel name` command was used. Here's the details:\n"
+                                                "Used by: {}\nUser ID: {}\nChannel ID: {}\nOld name: {}\nNew name: {}".format(user.name + "#" + user.discriminator,
+                                                                                                                              user.id, cid, oldname, newname))
+            else:
+                return
+    
+    @channel.command(pass_context=True, no_pm=True)
+    async def topic(self, ctx, newtopic, channel: discord.Channel=None):
+        """Sets a channels topic to 'newtopic'. newtopic must be enclosed in quotes. If no channel is specified the current channel is used."""
+        if newtopic is None or newtopic == "":
+            await self.bot.say("Sets the channel topic. Example: `{}channel topic Best channel evar!!!` would change the channel topic to 'Best channel evar!!!'")
+            return
+        else:
+            if channel is None:
+                channel = ctx.message.channel
+            user = ctx.message.author
+            oldtopic = channel.topic
+            if oldtopic is None or oldtopic == "":
+                oldtopic = "None"
+            cname = ctx.message.channel.name
+            cid = channel.id
+            await self.bot.say("Are you sure that you want to change the topic of {} from **{}** to **{}**? [Y/N]".format(channel.mention, oldtopic, newtopic))
+            topiccheck = await self.bot.wait_for_message(timeout=30, author=user, channel=ctx.message.channel)
+            if topiccheck is not None:
+                yescheck = ["yes", "Yes", "yes.", "Yes.", "Ye", "ye", "Y", "y"]
+                if topiccheck.content in yescheck:
+                    # await self.editchannelperms(channel, user)
+                    await self.bot.edit_channel(channel, topic=newtopic) # ['topic': topic])
+                    # await self.deletechannelperms(channel, user)
+                    await self.bot.say("{} topic changed to **{}**".format(channel.mention, newtopic))
+                    await self.bot.send_message(self.bot.get_channel(self.modlogchannel),
+                                                "My `..channel topic` command was used. Here's the details:\n"
+                                                "Used by: {}\nUser ID: {}\nChannel ID: {}\nOld topic: {}\nNew topic: {}".format(user.name + "#" + user.discriminator,
+                                                                                                                                user.id, cid, oldtopic, newtopic))
+            else:
+                return
+    
+    async def editchannelperms(self, channel, user):
+        overwrite = discord.PermissionOverwrite()
+        overwrite.manage_permissions = True
+        overwrite.read_messages = True
+        overwrite.send_messages = True
+        await self.bot.edit_channel_permissions(channel, user, overwrite)
+    
+    async def deletechannelperms(self, channel, user):
+        await self.bot.delete_channel_permissions(channel, user)
+    
     '''
     @commands.command(pass_context=True, no_pm=True)
     @checks.mod_or_permissions()
@@ -1672,6 +1768,12 @@ class BoomBeach:
 
         if "fire" in tf:
             tfdata[tf]["rename"] = tfdata[tf]["rename"].replace("replacewithfireemoji", "\U0001f525")
+        if "bolt" in tf:
+            tfdata[tf]["rename"] = "\U000026a1Bolt\U000026a1"
+        if "firex" in tf:
+            tfdata[tf]["rename"] = "\U0001f525Fire\U0000274c\U0001f525"
+        if "flame" in tf:
+            tfdata[tf]["rename"] = "Flame\U0001f525"
         renametemp = renameto + " | " + tfdata[tf]["rename"]
 
         " ".join(renametemp.split())
@@ -1820,7 +1922,7 @@ class BoomBeach:
             toprole = "Affiliate Leaders"
 
         validmocl = ["member", "officer", "co", "coleader", "co-leader", "leader"]
-        listmsg = await self.bot.say("Valid TF values to use in the `{}newmember` command:\n```\n{}\n```\n\nValid ranks for you to apply are:\n```\n{}\n```\nThis message and your `{}listtfs` command will be automatically deleted after 60 seconds.".format(ctx.prefix, ", ".join(sorted(tfdata.keys())), ", ".join(toprank[toprole]), ctx.prefix))
+        listmsg = await self.bot.say("Valid TF values to use in the `{}addmember` command:\n```\n{}\n```\n\nValid ranks for you to apply are:\n```\n{}\n```\nThis message and your `{}listtfs` command will be automatically deleted after 60 seconds.".format(ctx.prefix, ", ".join(sorted(tfdata.keys())), ", ".join(toprank[toprole]), ctx.prefix))
         await asyncio.sleep(60)
         await self.bot.delete_message(ctx.message)
         await self.bot.delete_message(listmsg)
