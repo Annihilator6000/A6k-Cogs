@@ -91,7 +91,7 @@ class SubredditLinker:
         server = message.server
         if server is None:
             return
-        if message.author == self.bot.user:
+        if message.author.id == self.bot.user.id:
             return
         if server.id in self.ignores.keys():
             if message.channel.id in self.ignores[server.id]:
